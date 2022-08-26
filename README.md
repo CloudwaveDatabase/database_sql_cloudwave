@@ -1,4 +1,5 @@
 ##
+123
 1. 添加 `GOINSEVURE` 环境变量
     GOINSECURE=gitlab.cloudwave.cn //此处设置私库域名
 # Go-CloudWave-Driver
