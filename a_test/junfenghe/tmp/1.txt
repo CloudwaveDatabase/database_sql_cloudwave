@@ -1,0 +1,7 @@
+insert into itest.t1 values(1,'Aaron',78);
+insert into itest.t1 values(2,'Bill',76);
+insert into itest.t1 values(3,'Cindy',89);
+insert into itest.t1 values(4,'Damon',89);
+insert into itest.t1 values(5,'Ella',73);
+insert into itest.t1 values(6,'Frado',61);
+insert into itest.t1 values(7,'Gill',99);
