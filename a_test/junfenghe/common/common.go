@@ -1,18 +1,18 @@
 package common
 
 import (
-	_ "cloudwave"
 	"database/sql"
-	_ "cloudwave"
+	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"time"
 )
 
 type CloudConfigConn struct {
-	User string `json:"user"`
+	User     string `json:"user"`
 	Password string `json:"password"`
-	Host string `json:"host"`
-	Port string `json:"port"`
+	Host     string `json:"host"`
+	Port     string `json:"port"`
 }
+
 /**
 * @Author junfenghe
 * @Description 获取数据库连接
@@ -32,7 +32,7 @@ func InitCloudwave() (i *sql.DB, err error) {
 	return db, nil
 }
 
-func InitMysql()  (i *sql.DB, err error)  {
+func InitMysql() (i *sql.DB, err error) {
 	dsn := "root:cloudwave1@(82.156.106.27:30307)/data_from_cbbpa"
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {

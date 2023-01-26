@@ -1,10 +1,9 @@
 package doc
 
 import (
-	"cloudwave/a_test/junfenghe/common"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
 	"testing"
 	"time"
-
 )
 
 func TestDoc_IF_EXISTS(t *testing.T) {
@@ -20,18 +19,19 @@ func TestDoc_IF_EXISTS(t *testing.T) {
 }
 
 type rsTypes struct {
-	ID int `json:"id"`
-	C1 int64 `json:"c1"`
-	C2 int `json:"c2"`
-	C3 float64 `json:"c3"`
-	C4 float64 `json:"c4"`
-	c5 time.Time `json:"c5"`
-	c6 time.Time `json:"c6"`
-	c7 string `json:"c7"`
-	c8  bool `json:"c8"`
-	c9 []byte `json:"c9"`
-	c10 string `json:"c10"`
+	ID  int       `json:"id"`
+	C1  int64     `json:"c1"`
+	C2  int       `json:"c2"`
+	C3  float64   `json:"c3"`
+	C4  float64   `json:"c4"`
+	c5  time.Time `json:"c5"`
+	c6  time.Time `json:"c6"`
+	c7  string    `json:"c7"`
+	c8  bool      `json:"c8"`
+	c9  []byte    `json:"c9"`
+	c10 string    `json:"c10"`
 }
+
 func TestDoc_Types(t *testing.T) {
 	db, err := common.InitCloudwave()
 	if err != nil {

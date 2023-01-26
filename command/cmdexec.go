@@ -1,20 +1,20 @@
 package command
 
 import (
-	"cloudwave"
 	"database/sql"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"sort"
 	"strconv"
 	"strings"
 )
 
 type DbWorker struct {
-	Dsn      string
-	Db       *sql.DB
+	Dsn string
+	Db  *sql.DB
 }
 
 func convert(cmd commandType) int {
@@ -186,7 +186,7 @@ func (db *DbWorker) GetInfoNoparamCommon(cmd commandType) (interface{}, error) {
 		}
 		return buf, nil
 	}
-	if  cmd == GetRunningSQL || cmd == GetMasterServerList || cmd == GetTabletServerList ||
+	if cmd == GetRunningSQL || cmd == GetMasterServerList || cmd == GetTabletServerList ||
 		cmd == GetServerList || cmd == GetServerStatus || cmd == GetSystemUtilization ||
 		cmd == GetMemorySize || cmd == GetNetworkStatus || cmd == GetUserNameList {
 		var index int
@@ -290,11 +290,11 @@ func (db *DbWorker) GetInfoNoparamCommon(cmd commandType) (interface{}, error) {
 				if err != nil {
 					return nil, err
 				}
-				s4 = strconv.FormatFloat(d4 / (1024 * 1024 * 1024), 'f', 2, 64)
-				s5 = strconv.FormatFloat(d5 / (1024 * 1024 * 1024), 'f', 2, 64)
-				s6 = strconv.FormatFloat(d6 / (1024 * 1024 * 1024), 'f', 2, 64)
-				s7 = strconv.FormatFloat(d7 / (1024 * 1024 * 1024), 'f', 2, 64)
-				s8 = strconv.FormatFloat(d8 / (1024 * 1024 * 1024), 'f', 2, 64)
+				s4 = strconv.FormatFloat(d4/(1024*1024*1024), 'f', 2, 64)
+				s5 = strconv.FormatFloat(d5/(1024*1024*1024), 'f', 2, 64)
+				s6 = strconv.FormatFloat(d6/(1024*1024*1024), 'f', 2, 64)
+				s7 = strconv.FormatFloat(d7/(1024*1024*1024), 'f', 2, 64)
+				s8 = strconv.FormatFloat(d8/(1024*1024*1024), 'f', 2, 64)
 				sss[index] = append(sss[index], string(s1), string(s2), string(s3), s4, s5, s6, s7, s8)
 				index++
 			}
@@ -445,7 +445,7 @@ func (db *DbWorker) GetTableComment(catalog string, schema []byte, table []byte)
 func getMoreData(result [][][]byte, count int, columns []int, makealiasArray bool) ([][]string, []string) {
 	columnCount := len(result)
 	baseIndex := 0
-	if strings.Compare(string(result[0][0]), AUTOKEY_COLUMN) == 0  {
+	if strings.Compare(string(result[0][0]), AUTOKEY_COLUMN) == 0 {
 		baseIndex = 1
 	}
 	columnCount -= baseIndex
@@ -461,14 +461,14 @@ func getMoreData(result [][][]byte, count int, columns []int, makealiasArray boo
 	for i := 0; i < count; i++ {
 		record := make([]string, len(columns))
 		for j := 0; j < len(columns); j++ {
-			if result[i][baseIndex + columns[j]] != nil {
-				record[j] = string(result[i][baseIndex + columns[j]])
+			if result[i][baseIndex+columns[j]] != nil {
+				record[j] = string(result[i][baseIndex+columns[j]])
 			} else {
 				record[j] = "NULL"
 			}
 		}
 		if makealiasArray {
-			if (result[i][baseIndex+22] != nil) {
+			if result[i][baseIndex+22] != nil {
 				aliasArray[i] = string(result[i][baseIndex+22])
 			} else {
 				aliasArray[i] = "NULL"
@@ -529,7 +529,7 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 	ftiColumns := make([]string, len(tokens))
 	j := 0
 	for i := 0; i < len(tokens); i++ {
-		if (len(tokens[i]) > 0) {
+		if len(tokens[i]) > 0 {
 			ftiColumns[j] = tokens[i]
 			j++
 		}
@@ -544,7 +544,7 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 	textIndexColumns := make([]string, len(tokens))
 	j = 0
 	for i := 0; i < len(tokens); i++ {
-		if (len(tokens[i]) > 0) {
+		if len(tokens[i]) > 0 {
 			textIndexColumns[j] = tokens[i]
 			j++
 		}
@@ -559,18 +559,18 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 	indexColumns := make([]string, len(tokens))
 	j = 0
 	for i := 0; i < len(tokens); i++ {
-		if (len(tokens[i]) > 0) {
+		if len(tokens[i]) > 0 {
 			indexColumns[j] = tokens[i]
 			j++
 		}
 	}
 	indexColumns = indexColumns[0:j]
-	var columns = []int { 3, 5, 6, 12, 17, 21, 11 }
+	var columns = []int{3, 5, 6, 12, 17, 21, 11}
 	rows, aliasArray := getMoreData(result, recordCount, columns, true)
 
-//	aliasArray := make([]string, recordCount)
+	//	aliasArray := make([]string, recordCount)
 	for i := 0; i < len(rows); i++ {
-		if strings.Compare(string(rows[i][0]), AUTOKEY_COLUMN) == 0  {
+		if strings.Compare(string(rows[i][0]), AUTOKEY_COLUMN) == 0 {
 			recordCount--
 		}
 	}
@@ -581,7 +581,7 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 	for i := 0; i < len(rows); i++ {
 		extendIndex := len(rows[i]) - 1
 		remark := rows[i][extendIndex]
-		if strings.Compare(rows[i][0], AUTOKEY_COLUMN) == 0  {
+		if strings.Compare(rows[i][0], AUTOKEY_COLUMN) == 0 {
 			continue
 		}
 		for j := 0; j <= extendIndex; j++ {
@@ -590,7 +590,7 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 		ki := strings.Index(rows[i][1], "(")
 		if ki > 0 {
 			record2[1] = rows[i][1][0:ki]
-			record2[2] = rows[i][1][ki + 1:len(rows[i][1])-1]
+			record2[2] = rows[i][1][ki+1 : len(rows[i][1])-1]
 			if strings.EqualFold(record2[1], "NUMERIC") {
 				record2[1] = "NUMBER"
 			}
@@ -621,9 +621,9 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 			k++
 		}
 		if k < len(textIndexColumns) {
-			record2[extendIndex + 1] = "YES"
+			record2[extendIndex+1] = "YES"
 		} else {
-			record2[extendIndex + 1] = "NO"
+			record2[extendIndex+1] = "NO"
 		}
 
 		k = 0
@@ -634,9 +634,9 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 			k++
 		}
 		if k < len(ftiColumns) {
-			record2[extendIndex + 2] = "YES"
+			record2[extendIndex+2] = "YES"
 		} else {
-			record2[extendIndex + 2] = "NO"
+			record2[extendIndex+2] = "NO"
 		}
 
 		k = 0
@@ -647,9 +647,9 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 			k++
 		}
 		if k < len(ukColumns) {
-			record2[extendIndex + 3] = "YES"
+			record2[extendIndex+3] = "YES"
 		} else {
-			record2[extendIndex + 3] = "NO"
+			record2[extendIndex+3] = "NO"
 		}
 
 		k = 0
@@ -660,22 +660,22 @@ func (db *DbWorker) GetTableColumns(schema []byte, table []byte, requestID int64
 			k++
 		}
 		if k < len(pkColumns) {
-			record2[extendIndex + 4] = "YES"
-			record2[extendIndex + 5] = strconv.FormatInt(pkSequences[k], 10)
+			record2[extendIndex+4] = "YES"
+			record2[extendIndex+5] = strconv.FormatInt(pkSequences[k], 10)
 		} else {
-			record2[extendIndex + 4] = "NO"
-			record2[extendIndex + 5] = "-"
+			record2[extendIndex+4] = "NO"
+			record2[extendIndex+5] = "-"
 		}
 
 		if remark != "NULL" && remark != "" {
-			record2[extendIndex + 6] = remark
+			record2[extendIndex+6] = remark
 		} else {
-			record2[extendIndex + 6] = "-"
+			record2[extendIndex+6] = "-"
 		}
 		if aliasArray[i] != "NULL" && aliasArray[i] != "" {
-			record2[extendIndex + 7] = aliasArray[i]
+			record2[extendIndex+7] = aliasArray[i]
 		} else {
-			record2[extendIndex + 7] = "-"
+			record2[extendIndex+7] = "-"
 		}
 		for k := 0; k < len(record2); k++ {
 			array[j] = append(array[j], record2[k])
@@ -763,7 +763,7 @@ func (db *DbWorker) GetTableDefinition(schema []byte, table []byte, requestID in
 		for j := 0; j < pkColumnsCount; j++ {
 			pki := pkSequences[j]
 			sb.WriteString(pkColumns[pki])
-			if j < pkColumnsCount - 1 {
+			if j < pkColumnsCount-1 {
 				sb.WriteString(", ")
 			} else {
 				sb.WriteString(")\n")
@@ -773,7 +773,7 @@ func (db *DbWorker) GetTableDefinition(schema []byte, table []byte, requestID in
 		sb.WriteString("  UNIQUE (")
 		for j := 0; j < ukColumnsCount; j++ {
 			sb.WriteString(string(ukColumns[j]))
-			if j < ukColumnsCount - 1 {
+			if j < ukColumnsCount-1 {
 				sb.WriteString(", ")
 			} else {
 				sb.WriteString(")\n")
@@ -808,7 +808,7 @@ func (db *DbWorker) GetTableDefinition(schema []byte, table []byte, requestID in
 
 	tableRemark, _ := db.GetTableComment("", schema, table)
 	if tableRemark != "" {
-		sb.WriteString("COMMENT ON TABLE " + string(schema) + "." + string(table)  + " is '" + tableRemark + "';\n")
+		sb.WriteString("COMMENT ON TABLE " + string(schema) + "." + string(table) + " is '" + tableRemark + "';\n")
 	}
 	for j := 0; j < columnRemarksCount; j++ {
 		sb.WriteString(columnRemarks[j])
@@ -839,7 +839,7 @@ func (db *DbWorker) GetViewDefinition(catalog string, schema []byte, table []byt
 		}
 	}
 	sss = sss[0:index]
-	var columns = []int { 2, 4 }
+	var columns = []int{2, 4}
 	records, _ := getMoreData(sss, index, columns, false)
 	array := make([][]string, index+1)
 	array[0] = append(array[0], "VIEW", "DESCRIPTION")
@@ -927,107 +927,107 @@ func (db *DbWorker) GetTableDistributionStatistics(schema string, table string) 
 		}
 	}
 	sss = sss[0:index]
-/*
-	tserverTabletCountMap := make(map[string] int64)
-	tserverSumRecordCountMap := make(map[string] int64)
-	tserverMaxRecordCountMap := make(map[string] int64)
-	tserverTabletScattersList := make(map[string] []string)
-	for i := 0; i < index; i++ {
-		var tabletId, tabletServer string
-		var tabletNo, tabletRcount int64
-		ki := strings.Index(sss[i][0], ",")
-		tabletId = sss[i][0]
-		if ki > 0 {
-			tabletId = sss[i][0][0:ki]
-		}
-		tabletNo, _ = strconv.ParseInt(sss[i][0][ki + 1:len(sss[i][0])], 10, 64)
-		tabletRcount, _ = strconv.ParseInt(sss[i][2], 10, 64)
-		tabletServer = sss[i][3]
-		var tserverTabletCount int64
-		tserverTabletCount = 0
-		if v, ok := tserverTabletCountMap[tabletServer]; ok {
-			tserverTabletCount = v
-		}
-		tserverTabletCount++
-		tserverTabletCountMap[tabletServer] = tserverTabletCount
-
-		var tserverSumRecordCount int64
-		tserverSumRecordCount = 0
-		if v, ok := tserverSumRecordCountMap[tabletServer]; ok {
-			tserverSumRecordCount = v
-		}
-		tserverSumRecordCount += tabletRcount
-		tserverSumRecordCountMap[tabletServer] = tserverSumRecordCount
-
-		var tserverMaxRecordCount int64
-		tserverMaxRecordCount = 0
-		if v, ok := tserverMaxRecordCountMap[tabletServer]; ok {
-			tserverMaxRecordCount = v
-		}
-		if tserverMaxRecordCount < tabletRcount {
-			tserverMaxRecordCount = tabletRcount
-		}
-		tserverMaxRecordCountMap[tabletServer] = tserverMaxRecordCount
-
-		var scatters []string
-		if i < 1000 {
-			if v, ok := tserverTabletScattersList[tabletServer]; ok {
-				scatters = v
+	/*
+		tserverTabletCountMap := make(map[string] int64)
+		tserverSumRecordCountMap := make(map[string] int64)
+		tserverMaxRecordCountMap := make(map[string] int64)
+		tserverTabletScattersList := make(map[string] []string)
+		for i := 0; i < index; i++ {
+			var tabletId, tabletServer string
+			var tabletNo, tabletRcount int64
+			ki := strings.Index(sss[i][0], ",")
+			tabletId = sss[i][0]
+			if ki > 0 {
+				tabletId = sss[i][0][0:ki]
 			}
-			ArrayList<String[]> scatters = tserverTabletScattersList.get(tabletServer);
-			if (scatters == null) {
-				scatters = new ArrayList<>();
+			tabletNo, _ = strconv.ParseInt(sss[i][0][ki + 1:len(sss[i][0])], 10, 64)
+			tabletRcount, _ = strconv.ParseInt(sss[i][2], 10, 64)
+			tabletServer = sss[i][3]
+			var tserverTabletCount int64
+			tserverTabletCount = 0
+			if v, ok := tserverTabletCountMap[tabletServer]; ok {
+				tserverTabletCount = v
 			}
-			String[] scatter = new String[] {
-				String.valueOf(tabletNo),
-				String.valueOf(tabletRcount)
-			};
-			scatters.add(scatter);
-			tserverTabletScattersList.put(tabletServer, scatters);
-		}
-	}
+			tserverTabletCount++
+			tserverTabletCountMap[tabletServer] = tserverTabletCount
 
-	String[][] tserverDistribs = new String[tabletServers.size()][];
-	int i = 0
-	for i := 0; i < index; i++ {
-		tserver := sss[i][3]
+			var tserverSumRecordCount int64
+			tserverSumRecordCount = 0
+			if v, ok := tserverSumRecordCountMap[tabletServer]; ok {
+				tserverSumRecordCount = v
+			}
+			tserverSumRecordCount += tabletRcount
+			tserverSumRecordCountMap[tabletServer] = tserverSumRecordCount
 
-		ArrayList<String> values = new ArrayList<>();
-		values.add(tserver);
+			var tserverMaxRecordCount int64
+			tserverMaxRecordCount = 0
+			if v, ok := tserverMaxRecordCountMap[tabletServer]; ok {
+				tserverMaxRecordCount = v
+			}
+			if tserverMaxRecordCount < tabletRcount {
+				tserverMaxRecordCount = tabletRcount
+			}
+			tserverMaxRecordCountMap[tabletServer] = tserverMaxRecordCount
 
-		Long tabletCount = tserverTabletCountMap.get(tserver);
-		if (tabletCount == null) {
-			values.add(String.valueOf(0));
-		} else {
-			values.add(String.valueOf(tabletCount));
-		}
-
-		Long tabletSumRecordCount = tserverSumRecordCountMap.get(tserver);
-		if (tabletSumRecordCount == null) {
-			values.add(String.valueOf(0));
-		} else {
-			values.add(String.valueOf(tabletSumRecordCount / tabletCount));
-		}
-
-		Long tabletMaxRecordCount = tserverMaxRecordCountMap.get(tserver);
-		if (tabletMaxRecordCount == null) {
-			values.add(String.valueOf(0));
-		} else {
-			values.add(String.valueOf(tabletMaxRecordCount));
-		}
-
-		ArrayList<String[]> scatters = tserverTabletScattersList.get(tserver);
-		if (scatters != null) {
-			for (String[] scatter : scatters) {
-				values.add(scatter[0]);
-				values.add(scatter[1]);
+			var scatters []string
+			if i < 1000 {
+				if v, ok := tserverTabletScattersList[tabletServer]; ok {
+					scatters = v
+				}
+				ArrayList<String[]> scatters = tserverTabletScattersList.get(tabletServer);
+				if (scatters == null) {
+					scatters = new ArrayList<>();
+				}
+				String[] scatter = new String[] {
+					String.valueOf(tabletNo),
+					String.valueOf(tabletRcount)
+				};
+				scatters.add(scatter);
+				tserverTabletScattersList.put(tabletServer, scatters);
 			}
 		}
-		tserverDistribs[i ++] = values.toArray(new String[0]);
-	}
 
-	return tserverDistribs;
-*/
+		String[][] tserverDistribs = new String[tabletServers.size()][];
+		int i = 0
+		for i := 0; i < index; i++ {
+			tserver := sss[i][3]
+
+			ArrayList<String> values = new ArrayList<>();
+			values.add(tserver);
+
+			Long tabletCount = tserverTabletCountMap.get(tserver);
+			if (tabletCount == null) {
+				values.add(String.valueOf(0));
+			} else {
+				values.add(String.valueOf(tabletCount));
+			}
+
+			Long tabletSumRecordCount = tserverSumRecordCountMap.get(tserver);
+			if (tabletSumRecordCount == null) {
+				values.add(String.valueOf(0));
+			} else {
+				values.add(String.valueOf(tabletSumRecordCount / tabletCount));
+			}
+
+			Long tabletMaxRecordCount = tserverMaxRecordCountMap.get(tserver);
+			if (tabletMaxRecordCount == null) {
+				values.add(String.valueOf(0));
+			} else {
+				values.add(String.valueOf(tabletMaxRecordCount));
+			}
+
+			ArrayList<String[]> scatters = tserverTabletScattersList.get(tserver);
+			if (scatters != null) {
+				for (String[] scatter : scatters) {
+					values.add(scatter[0]);
+					values.add(scatter[1]);
+				}
+			}
+			tserverDistribs[i ++] = values.toArray(new String[0]);
+		}
+
+		return tserverDistribs;
+	*/
 	return sss, nil
 }
 
@@ -1085,25 +1085,25 @@ func (db *DbWorker) GetHistorySQLs() ([][]string, error) {
 
 	ss[0] = append(ss[0], "[Running SQLs]\n")
 	for i := 0; i < len(runSQLs); i++ {
-		ss[0] = append(ss[0], runSQLs[i] + "\n")
+		ss[0] = append(ss[0], runSQLs[i]+"\n")
 	}
 	ss[0] = append(ss[0], "\n")
 
 	ss[1] = append(ss[1], "[Consume SQLs]\n")
 	for i := 0; i < len(consumeSQLs); i++ {
-		ss[1] = append(ss[1], consumeSQLs[i] + "\n")
+		ss[1] = append(ss[1], consumeSQLs[i]+"\n")
 	}
 	ss[1] = append(ss[1], "\n")
 
 	ss[2] = append(ss[2], "[Failed SQLs]\n")
 	for i := 0; i < len(failedSQLs); i++ {
-		ss[2] = append(ss[2], failedSQLs[i] + "\n")
+		ss[2] = append(ss[2], failedSQLs[i]+"\n")
 	}
 	ss[2] = append(ss[2], "\n")
 
 	ss[3] = append(ss[3], "[Recent SQLs]\n")
 	for i := 0; i < len(recentSQLs); i++ {
-		ss[3] = append(ss[3], recentSQLs[i] + "\n")
+		ss[3] = append(ss[3], recentSQLs[i]+"\n")
 	}
 	ss[3] = append(ss[3], "\n")
 	return ss, nil
@@ -1226,12 +1226,12 @@ func (db *DbWorker) GetHealthDiagnostic(simpleCheck bool) ([]string, error) {
 				pos += 8
 				size := int(binary.BigEndian.Uint32(buf[pos:]))
 				pos += 4
-fmt.Print(checkType)
-fmt.Print(checkTarget)
-fmt.Print(healthServer)
-fmt.Print(healthWeight)
-fmt.Print(healthScore)
-fmt.Println(size)
+				fmt.Print(checkType)
+				fmt.Print(checkTarget)
+				fmt.Print(healthServer)
+				fmt.Print(healthWeight)
+				fmt.Print(healthScore)
+				fmt.Println(size)
 			}
 		}
 	}

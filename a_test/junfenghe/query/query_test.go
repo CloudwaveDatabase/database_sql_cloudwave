@@ -1,8 +1,8 @@
 package query
 
 import (
-	_ "cloudwave"
-	"cloudwave/a_test/junfenghe/common"
+	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
 	"testing"
 )
 
@@ -45,7 +45,7 @@ func TestQuery(t *testing.T) {
 		t.Error(err)
 	}
 	//db.Exec("use schema tpch1")
-	rows, err := db.Query("select `r_regionkey`, `r_name`, `r_comment` from tpch1.region where 1 = ?",1)
+	rows, err := db.Query("select `r_regionkey`, `r_name`, `r_comment` from tpch1.region where 1 = ?", 1)
 	if err != nil {
 		t.Error(err)
 	}
