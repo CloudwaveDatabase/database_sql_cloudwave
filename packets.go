@@ -11,14 +11,14 @@ package cloudwave
 import (
 	//	"bytes"
 	"crypto/sha1"
-//	"strconv"
-	"strings"
+	"regexp"
+
 	//	"strings"
 	//	"crypto/tls"
 	"database/sql/driver"
 	"encoding/base64"
 	"encoding/binary"
-//	"encoding/json"
+	//	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -45,7 +45,7 @@ func (mc *cwConn) requestServer1(requestType int, outdata []byte) ([]byte, error
 		return nil, ErrInvalidConn
 	}
 	outdata[0] = B_REQ_TAG
-	binary.BigEndian.PutUint32(outdata[1:], uint32(pktLen - 5))
+	binary.BigEndian.PutUint32(outdata[1:], uint32(pktLen-5))
 	binary.BigEndian.PutUint32(outdata[5:], uint32(requestType))
 	binary.BigEndian.PutUint64(outdata[9:], uint64(mc.sessionTime))
 	binary.BigEndian.PutUint64(outdata[17:], uint64(mc.sessionSequence))
@@ -76,31 +76,31 @@ func (mc *cwConn) readPacket() ([]byte, error) {
 		}
 
 		// packet length [24 bit]
-//		pktLen := int(uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16)
+		//		pktLen := int(uint32(data[0]) | uint32(data[1])<<8 | uint32(data[2])<<16)
 		pktLen := int(binary.BigEndian.Uint32(data[0:])) - 4
 
-/*		// check packet sync [8 bit]
-		if data[3] != mc.sequence {
-			if data[3] > mc.sequence {
-				return nil, ErrPktSyncMul
-			}
-			return nil, ErrPktSync
-		}
-		mc.sequence++
+		/*		// check packet sync [8 bit]
+				if data[3] != mc.sequence {
+					if data[3] > mc.sequence {
+						return nil, ErrPktSyncMul
+					}
+					return nil, ErrPktSync
+				}
+				mc.sequence++
 
-		// packets with length 0 terminate a previous packet which is a
-		// multiple of (2^24)-1 bytes long
-		if pktLen == 0 {
-			// there was no previous packet
-			if prevData == nil {
-				errLog.Print(ErrMalformPkt)
-				mc.Close()
-				return nil, ErrInvalidConn
-			}
+				// packets with length 0 terminate a previous packet which is a
+				// multiple of (2^24)-1 bytes long
+				if pktLen == 0 {
+					// there was no previous packet
+					if prevData == nil {
+						errLog.Print(ErrMalformPkt)
+						mc.Close()
+						return nil, ErrInvalidConn
+					}
 
-			return prevData, nil
-		}
-*/
+					return prevData, nil
+				}
+		*/
 		// read packet body [pktLen bytes]
 		data, err = mc.buf.readNext(pktLen)
 		if err != nil {
@@ -201,7 +201,6 @@ func (mc *cwConn) writePacket(data []byte) error {
 *                           Initialization Process                            *
 ******************************************************************************/
 
-
 func (mc *cwConn) readFirstResponsePacket() error {
 	data, err := mc.readPacket()
 	if err != nil {
@@ -262,7 +261,7 @@ func (mc *cwConn) writeFirstPacket() error {
 		pos += copy(data[pos:], timeZoneId)
 	}
 	data[0] = B_REQ_TAG
-	binary.BigEndian.PutUint32(data[1:], uint32(pos - 5))
+	binary.BigEndian.PutUint32(data[1:], uint32(pos-5))
 	cmd := B_REQ_BUILD_CONNECTION
 	binary.BigEndian.PutUint32(data[5:], uint32(cmd))
 
@@ -293,7 +292,7 @@ func (mc *cwConn) writeCommandPacket(command int) error {
 
 func (mc *cwConn) setCommandPacket(command int, length int, data []byte) error {
 	data[0] = B_REQ_TAG
-	binary.BigEndian.PutUint32(data[1:], uint32(length - 5))
+	binary.BigEndian.PutUint32(data[1:], uint32(length-5))
 	binary.BigEndian.PutUint32(data[5:], uint32(command))
 	binary.BigEndian.PutUint64(data[9:], uint64(mc.sessionTime))
 	binary.BigEndian.PutUint64(data[17:], uint64(mc.sessionSequence))
@@ -304,7 +303,7 @@ func (stmt *cwStmt) writeCommandPacketStr(command byte, arg string) error {
 	// Reset Packet Sequence
 	stmt.mc.sequence = 0
 
-	pktLen := 25 + 4 * 2 + 4 + len(arg) + 2 * 4
+	pktLen := 25 + 4*2 + 4 + len(arg) + 2*4
 
 	data, err := stmt.mc.buf.takeBuffer(pktLen)
 	if err != nil {
@@ -324,7 +323,7 @@ func (stmt *cwStmt) writeCommandPacketStr(command byte, arg string) error {
 	pos += copy(data[pos:], arg)
 	binary.BigEndian.PutUint32(data[pos:], uint32(command))
 	pos += 4
-	binary.BigEndian.PutUint32(data[pos:], uint32(2))	//NO_GENERATED_KEYS=2
+	binary.BigEndian.PutUint32(data[pos:], uint32(2)) //NO_GENERATED_KEYS=2
 	pos += 4
 
 	stmt.mc.setCommandPacket(EXECUTE_STATEMENT, pos, data[0:25])
@@ -346,7 +345,7 @@ func (mc *cwConn) readResultOK() ([]byte, error) {
 	length := len(data)
 	if length > 0 {
 		buf := make([]byte, len(data))
-		copy(buf, data[0 : length])
+		copy(buf, data[0:length])
 		if data[0] == iOK {
 			return buf, nil
 		}
@@ -374,9 +373,9 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 		localSessionTime := binary.BigEndian.Uint64(data[1:])
 		localSessionSequence := binary.BigEndian.Uint64(data[9:])
 		rows.stmtId = int32(binary.BigEndian.Uint32(data[17:]))
-//		localStatementId := int32(binary.BigEndian.Uint32(data[17:]))
+		//		localStatementId := int32(binary.BigEndian.Uint32(data[17:]))
 		if localSessionTime != stmt.mc.sessionTime || localSessionSequence != stmt.mc.sessionSequence {
-//			return 0, nil, ErrMalformPkt
+			//			return 0, nil, ErrMalformPkt
 		}
 		rows.cursorId = int32(binary.BigEndian.Uint32(data[21:]))
 		rows.stmt.mc.affectedRows = uint64(binary.BigEndian.Uint32(data[25:]))
@@ -422,9 +421,9 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 						pos += n
 					}
 					pos++
-					columns[j].fieldType = CLOUD_TYPE_VARCHAR		//?????
-	//				columns[j].fieldType = fieldType(binary.BigEndian.Uint32(data[pos:]))
-					columns[j].length = binary.BigEndian.Uint32(data[pos:])	//?????
+					columns[j].fieldType = CLOUD_TYPE_VARCHAR //?????
+					//				columns[j].fieldType = fieldType(binary.BigEndian.Uint32(data[pos:]))
+					columns[j].length = binary.BigEndian.Uint32(data[pos:]) //?????
 					pos += 4
 
 					if data[pos] == 0 {
@@ -445,9 +444,15 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 						pos += n
 					}
 					pos++
-					if strings.EqualFold(columns[j].name, "__CLOUDWAVE_AUTO_KEY__") != true {
+					// by weiping 20230320
+					re, _ := regexp.Compile("__WISDOM_AUTO_KEY__$")
+					if re.MatchString("__WISDOM_AUTO_KEY__") != true {
 						j++
 					}
+					// by weiping 20230320
+					//if strings.EqualFold(columns[j].name, "__CLOUDWAVE_AUTO_KEY__") != true {
+					//	j++
+					//}
 				}
 				if pos <= len(data) {
 					if j == columnSize {
@@ -460,7 +465,7 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 					return columnSize, rows, nil
 				}
 				// column count
-	//			num, _, n := readLengthEncodedInteger(data)
+				//			num, _, n := readLengthEncodedInteger(data)
 				return 0, nil, ErrMalformPkt
 			} else {
 				return columnSize, rows, nil
@@ -505,7 +510,7 @@ func (mc *cwConn) readCloudResultSetPacket() ([]int64, error) {
 			localSessionTime := binary.BigEndian.Uint64(data[1:])
 			localSessionSequence := binary.BigEndian.Uint64(data[9:])
 			if localSessionTime != mc.sessionTime || localSessionSequence != mc.sessionSequence {
-//				return nil, ErrMalformPkt
+				//				return nil, ErrMalformPkt
 			}
 			n := (datalen - 17) / 8
 			if n > 0 {
@@ -531,20 +536,20 @@ func (mc *cwConn) handleErrorPacket(data []byte) error {
 	pos := 1
 
 	// briefMessage
-	length := int(binary.BigEndian.Uint32(data[pos:pos+4]))
+	length := int(binary.BigEndian.Uint32(data[pos : pos+4]))
 	pos += 4
-	briefmessage := data[pos : pos + length]
+	briefmessage := data[pos : pos+length]
 	pos += length
 	// Message
-	
-	length = int(binary.BigEndian.Uint32(data[pos:pos+4]))
+
+	length = int(binary.BigEndian.Uint32(data[pos : pos+4]))
 	pos += 4
-	message := data[pos : pos + length]
+	message := data[pos : pos+length]
 
 	// Error Message [string]
 	return &CloudWaveError{
-		briefMessage:  string(briefmessage),
-		Message: string(message),
+		briefMessage: string(briefmessage),
+		Message:      string(message),
 	}
 }
 
@@ -679,7 +684,7 @@ func (mc *cwConn) readColumns(count int) ([]cwField, error) {
 
 func (rows *textRows) ResultSetRecordCount() int64 {
 	mc := rows.stmt.mc
-	data, err := mc.buf.takeBuffer(25 + 4 * 3)
+	data, err := mc.buf.takeBuffer(25 + 4*3)
 
 	pos := 25
 	binary.BigEndian.PutUint32(data[pos:], uint32(rows.stmtId))
@@ -703,14 +708,14 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 	if rows.rs.done {
 		return io.EOF
 	}
-	dataout, err := mc.buf.takeBuffer(25 + 4 * 3)
+	dataout, err := mc.buf.takeBuffer(25 + 4*3)
 
 	pos := 25
 	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.stmtId))
-//	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.stmt.id))
+	//	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.stmt.id))
 	pos += 4
 	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.cursorId))
-//	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.stmt.cursorId))
+	//	binary.BigEndian.PutUint32(dataout[pos:], uint32(rows.stmt.cursorId))
 	pos += 4
 	binary.BigEndian.PutUint32(dataout[pos:], uint32(1))
 	pos += 4
@@ -724,7 +729,7 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 
 	if datain[0] != 1 {
 		// server_status [2 bytes]
-//		rows.mc.status = readStatus(data[3:])
+		//		rows.mc.status = readStatus(data[3:])
 		rows.rs.done = true
 		if !rows.HasNextResultSet() {
 			rows.stmt.mc = nil
@@ -762,25 +767,25 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 		}
 		pos += n
 		scale = scale
-/*
-		// Parse time field
-//		rows.rs.columns[i].fieldType = tp
-		switch tp {
-		case CLOUD_TYPE_DATE,
-			CLOUD_TYPE_TIME,
-			CLOUD_TYPE_TIMESTAMP:
-			if dest[i], err = parseDateTime(dest[i].([]byte), mc.cfg.Loc); err != nil {
-				return err
-			}
-		}
-*/
+		/*
+		   		// Parse time field
+		   //		rows.rs.columns[i].fieldType = tp
+		   		switch tp {
+		   		case CLOUD_TYPE_DATE,
+		   			CLOUD_TYPE_TIME,
+		   			CLOUD_TYPE_TIMESTAMP:
+		   			if dest[i], err = parseDateTime(dest[i].([]byte), mc.cfg.Loc); err != nil {
+		   				return err
+		   			}
+		   		}
+		*/
 	}
 	return nil
 }
 
 // Reads Packets until EOF-Packet or an Error appears. Returns count of Packets read
 func (mc *cwConn) readUntilEOF() error {
-	return nil	//weiping ?????
+	return nil //weiping ?????
 	for {
 		data, err := mc.readPacket()
 		if err != nil {
@@ -814,8 +819,8 @@ func (stmt *cwStmt) readPrepareResultPacket() (int, error) {
 		return 0, stmt.mc.handleErrorPacket(data)
 	}
 	stmt.id = binary.BigEndian.Uint32(data[1:])
-	stmt.executeSequence = 0;
-	bindVarCount :=  int(binary.BigEndian.Uint32(data[5:]))
+	stmt.executeSequence = 0
+	bindVarCount := int(binary.BigEndian.Uint32(data[5:]))
 	stmt.paramCount = bindVarCount
 	buf := make([]byte, bindVarCount)
 	copy(buf, data[9:9+bindVarCount])
@@ -878,7 +883,7 @@ func (stmt *cwStmt) writeExecutePacket(executeType int, args []driver.Value) err
 
 	if len(args) > 0 {
 		for i, arg := range args {
-			binary.BigEndian.PutUint32(data[pos:], uint32(i + 1))
+			binary.BigEndian.PutUint32(data[pos:], uint32(i+1))
 			pos += 4
 			n, err := writeObject(arg, stmt.paramType[i], 10, data[pos:])
 			if err != nil {
