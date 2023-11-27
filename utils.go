@@ -39,26 +39,25 @@ var (
 // Note: The provided tls.Config is exclusively owned by the driver after
 // registering it.
 //
-//  rootCertPool := x509.NewCertPool()
-//  pem, err := ioutil.ReadFile("/path/ca-cert.pem")
-//  if err != nil {
-//      log.Fatal(err)
-//  }
-//  if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
-//      log.Fatal("Failed to append PEM.")
-//  }
-//  clientCert := make([]tls.Certificate, 0, 1)
-//  certs, err := tls.LoadX509KeyPair("/path/client-cert.pem", "/path/client-key.pem")
-//  if err != nil {
-//      log.Fatal(err)
-//  }
-//  clientCert = append(clientCert, certs)
-//  cloudwave.RegisterTLSConfig("custom", &tls.Config{
-//      RootCAs: rootCertPool,
-//      Certificates: clientCert,
-//  })
-//  db, err := sql.Open("cloudwave", "user@tcp(localhost:3306)/test?tls=custom")
-//
+//	rootCertPool := x509.NewCertPool()
+//	pem, err := ioutil.ReadFile("/path/ca-cert.pem")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	if ok := rootCertPool.AppendCertsFromPEM(pem); !ok {
+//	    log.Fatal("Failed to append PEM.")
+//	}
+//	clientCert := make([]tls.Certificate, 0, 1)
+//	certs, err := tls.LoadX509KeyPair("/path/client-cert.pem", "/path/client-key.pem")
+//	if err != nil {
+//	    log.Fatal(err)
+//	}
+//	clientCert = append(clientCert, certs)
+//	cloudwave.RegisterTLSConfig("custom", &tls.Config{
+//	    RootCAs: rootCertPool,
+//	    Certificates: clientCert,
+//	})
+//	db, err := sql.Open("cloudwave", "user@tcp(localhost:3306)/test?tls=custom")
 func RegisterTLSConfig(key string, config *tls.Config) error {
 	if _, isBool := readBool(key); isBool || strings.ToLower(key) == "skip-verify" || strings.ToLower(key) == "preferred" {
 		return fmt.Errorf("key '%s' is reserved", key)
@@ -555,7 +554,7 @@ func Ucs2ToUtf8(ucs2 []byte, count int) ([]byte, int, error) {
 	pos_utf8 := 0
 	ucs2size := len(ucs2)
 	for i := 0; i < count; i++ {
-		if ucs2[pos_ucs2] == 0 && (ucs2[pos_ucs2+1] & 0x80) == 0 {
+		if ucs2[pos_ucs2] == 0 && (ucs2[pos_ucs2+1]&0x80) == 0 {
 			utf8[pos_utf8] = ucs2[pos_ucs2+1]
 			pos_ucs2 += 2
 			pos_utf8++
@@ -565,7 +564,7 @@ func Ucs2ToUtf8(ucs2 []byte, count int) ([]byte, int, error) {
 			pos_ucs2 += 2
 			pos_utf8 += 2
 		} else {
-			utf8[pos_utf8] = 0xe0 | (ucs2[pos_ucs2] & 0xf0) >> 4
+			utf8[pos_utf8] = 0xe0 | (ucs2[pos_ucs2]&0xf0)>>4
 			utf8[pos_utf8+1] = 0x80 | ((ucs2[pos_ucs2] & 0x0f) << 2) | ((ucs2[pos_ucs2+1] & 0xc0) >> 6)
 			utf8[pos_utf8+2] = 0x80 | (ucs2[pos_ucs2+1] & 0x3f)
 			pos_ucs2 += 2
@@ -606,20 +605,20 @@ func Utf8ToUcs2(utf8 []byte, utf8len int) ([]byte, int, error) {
 		}
 		count++
 		if pos_utf8 > utf8len {
-//			return ucs2, pos_utf8, io.EOF
+			//			return ucs2, pos_utf8, io.EOF
 		}
 	}
 	return ucs2[0:pos_ucs2], count, nil
 }
 
-func writeObject(arg driver.Value, tp byte, scale int, data []byte) (int, error) {
-	var t 			byte
-	var v_int64		int64
-	var v_float64	float64
-	var v_byte		[]byte
-	var v_string	string
-	var v_bool		bool
-	var v_time		time.Time
+func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byte) (int, error) {
+	var t byte
+	var v_int64 int64
+	var v_float64 float64
+	var v_byte []byte
+	var v_string string
+	var v_bool bool
+	var v_time time.Time
 
 	pos := 1
 	if arg == nil {
@@ -824,30 +823,39 @@ func writeObject(arg driver.Value, tp byte, scale int, data []byte) (int, error)
 		case CLOUD_TYPE_BINARY:
 			tm, _ = time.ParseInLocation("2006-01-02", string(v_byte), time.Local)
 		default:
-//			tm = new(time.Time)
+			//			tm = new(time.Time)
 		}
 		year, month, day := tm.Date()
-		d := year * 10000 + (int(month) - 1) * 100 + day
+		d := year*10000 + (int(month)-1)*100 + day
 		binary.BigEndian.PutUint32(data[pos:], uint32(d))
 		pos += 4
 	case CLOUD_TYPE_TIME,
 		CLOUD_TYPE_TIMESTAMP:
 		t, _ := time.ParseInLocation(timeFormat, v_string, time.Local)
-		d := uint64(t.Unix()) * 1000 + uint64(t.Nanosecond()) / 1000000
+		d := uint64(t.Unix())*1000 + uint64(t.Nanosecond())/1000000
 		binary.BigEndian.PutUint64(data[pos:], uint64(d))
 		pos += 8
 
 	case CLOUD_TYPE_BLOB:
+		blob := getBlob(stmt.mc, -1, false)
+		blob.resolveBinaryIO(v_byte)
+		binary.BigEndian.PutUint64(data[pos:], uint64(blob.id))
+		pos += 8
 
 	case CLOUD_TYPE_CLOB:
+		clob := getClob(stmt.mc, -1, false)
+		byt := []byte(v_string)
+		clob.resolveCharacterIO(byt)
+		binary.BigEndian.PutUint64(data[pos:], uint64(clob.id))
+		pos += 8
 
 	case CLOUD_TYPE_BFILE:
 
 	}
-	return 0, nil
+	return pos, nil
 }
 
-func readObject(b []byte) (driver.Value, byte, int, int, error) {
+func (rows *textRows) readObject(b []byte) (driver.Value, byte, int, int, error) {
 	var err error
 	var dest driver.Value
 
@@ -861,10 +869,10 @@ func readObject(b []byte) (driver.Value, byte, int, int, error) {
 	//see JAVA JDBC ObjectConverter.java
 	switch tp {
 	case CLOUD_TYPE_SINGLE_CHAR:
-		dest = b[pos:pos+1]
+		dest = b[pos : pos+1]
 		pos += 2
 	case CLOUD_TYPE_CHAR, CLOUD_TYPE_VARCHAR:
-		count := int(binary.BigEndian.Uint32(b[pos:pos+4]))
+		count := int(binary.BigEndian.Uint32(b[pos : pos+4]))
 		pos += 4
 		dest, n, err = Ucs2ToUtf8(b[pos:], count)
 		pos += n
@@ -874,7 +882,7 @@ func readObject(b []byte) (driver.Value, byte, int, int, error) {
 		pos++
 
 	case CLOUD_TYPE_BINARY, CLOUD_TYPE_VARBINARY:
-		n := int(binary.BigEndian.Uint32(b[pos:pos+4]))
+		n := int(binary.BigEndian.Uint32(b[pos : pos+4]))
 		pos += 4
 		buf := make([]byte, n)
 		copy(buf, b[pos:pos+n])
@@ -882,58 +890,58 @@ func readObject(b []byte) (driver.Value, byte, int, int, error) {
 		pos += n
 
 	case CLOUD_TYPE_INTEGER, CLOUD_TYPE_TINY_INTEGER:
-		dest = int32(binary.BigEndian.Uint32(b[pos:pos+4]))
+		dest = int32(binary.BigEndian.Uint32(b[pos : pos+4]))
 		pos += 4
 
 	case CLOUD_TYPE_LONG, CLOUD_TYPE_SMALL_INTEGER:
-		dest = int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+		dest = int64(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
 
 	case CLOUD_TYPE_FLOAT:
-		dest = math.Float32frombits(binary.BigEndian.Uint32(b[pos:pos+4]))
+		dest = math.Float32frombits(binary.BigEndian.Uint32(b[pos : pos+4]))
 		pos += 4
 
 	case CLOUD_TYPE_DOUBLE:
-		dest = math.Float64frombits(binary.BigEndian.Uint64(b[pos:pos+8]))
+		dest = math.Float64frombits(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
 	case CLOUD_TYPE_DATE:
-		t := int(binary.BigEndian.Uint32(b[pos:pos+4]))
-		month := time.Month((t % 10000) / 100 + 1)
-		dest = time.Date(t / 10000, month, t % 100, 0, 0, 0, 0, time.Local).Format(dateFormat)
+		t := int(binary.BigEndian.Uint32(b[pos : pos+4]))
+		month := time.Month((t%10000)/100 + 1)
+		dest = time.Date(t/10000, month, t%100, 0, 0, 0, 0, time.Local).Format(dateFormat)
 		pos += 4
 
 	case CLOUD_TYPE_TIME:
-		t := int64(binary.BigEndian.Uint64(b[pos:pos+8]))
-		dest = time.Unix(t / 1000, t % 1000).Format(timeFormat)
+		t := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
+		dest = time.Unix(t/1000, t%1000)
 		pos += 8
 	case CLOUD_TYPE_TIMESTAMP:
-		t := int64(binary.BigEndian.Uint64(b[pos:pos+8]))
-		dest = time.Unix(t / 1000, t % 1000).Format(timeFormat)
+		t := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
+		dest = time.Unix(t/1000, t%1000)
 		pos += 8
 	case CLOUD_TYPE_BOOLEAN:
 		dest = b[pos]
 		pos++
 	case CLOUD_TYPE_TINY_DECIMAL:
-		dest = binary.BigEndian.Uint64(b[pos:pos+4])
+		dest = binary.BigEndian.Uint64(b[pos : pos+4])
 		pos += 4
 		scale = int(b[pos])
 		pos++
 	case CLOUD_TYPE_SMALL_DECIMAL:
-		dest = int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+		dest = int64(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
 		scale = int(b[pos])
 		pos++
 	case CLOUD_TYPE_BIG_DECIMAL:
 		var bi big.Int
 		if b[pos] == 0 {
-			bi = * new(big.Int).SetInt64(int64(binary.BigEndian.Uint64(b[pos+1 : pos+9])))
+			bi = *new(big.Int).SetInt64(int64(binary.BigEndian.Uint64(b[pos+1 : pos+9])))
 			pos += (1 + 8)
 			scale = int(b[pos])
 			pos++
 		} else {
 			n := int(b[pos+1])
 			pos += 2
-			bi, err = bytes2bigInt(b[pos:pos+n])
+			bi, err = bytes2bigInt(b[pos : pos+n])
 			if err != nil {
 				break
 			}
@@ -948,13 +956,13 @@ func readObject(b []byte) (driver.Value, byte, int, int, error) {
 		pos += (n + 1)
 	case CLOUD_TYPE_BIG_INTEGER:
 		if b[pos] == 0 {
-			dest = int64(binary.BigEndian.Uint64(b[pos+1:pos+9]))
+			dest = int64(binary.BigEndian.Uint64(b[pos+1 : pos+9]))
 			pos += (1 + 8)
 		} else {
 			var bi big.Int
 			n := int(b[pos+1])
 			pos += 2
-			bi, err = bytes2bigInt(b[pos:pos+n])
+			bi, err = bytes2bigInt(b[pos : pos+n])
 			if err != nil {
 				break
 			}
@@ -964,52 +972,74 @@ func readObject(b []byte) (driver.Value, byte, int, int, error) {
 			}
 			pos += n
 		}
-/*
-	case CLOUD_TYPE_YEAR_MONTH:
-		string := strconv.Itoa(int32(binary.BigEndian.Uint32(b[pos:pos+4]))) + "/"
-			strconv.Itoa(int32(binary.BigEndian.Uint32(b[pos+4:pos+8])))
-		pos += (4 + 4)
+		/*
+			case CLOUD_TYPE_YEAR_MONTH:
+				string := strconv.Itoa(int32(binary.BigEndian.Uint32(b[pos:pos+4]))) + "/"
+					strconv.Itoa(int32(binary.BigEndian.Uint32(b[pos+4:pos+8])))
+				pos += (4 + 4)
+
+			case CLOUD_TYPE_LONGVARBINARY,
+				CLOUD_TYPE_CLOB:
+				//clobId := int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+				pos += 8
+
+			case CLOUD_TYPE_LONGVARCHAR,
+				CLOUD_TYPE_ARRAY:
+				valueLen := int32(binary.BigEndian.Uint32(b[pos:pos+4]))
+				pos += 4
+				//read Comparable (valueLen)
+
+			case CLOUD_TYPE_GROUPING:
+				pos++
+			case CLOUD_TYPE_X2_LONG:
+				int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+				pos += 8
+				int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+				pos += 8
+				b[pos]
+				pos++
+				b[pos]
+				pos++
+			case CLOUD_TYPE_NULL:
+				dest = nil
+		*/
+	case CLOUD_TYPE_CLOB:
+		clobId := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
+		pos += 8
+		cloudclob := &cloudClob{
+			connection:  rows.stmt.mc,
+			statementId: rows.stmt.id,
+			cursorId:    uint32(rows.cursorId),
+			id:          clobId,
+			owned:       false,
+			maxLength:   INT_MAX_VALUE,
+		}
+		dest, err = cloudclob.getSubString()
 
 	case CLOUD_TYPE_BLOB:
-//		blobId := int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+		blobId := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
+		cloudblob := &cloudBlob{
+			connection:  rows.stmt.mc,
+			statementId: rows.stmt.id,
+			cursorId:    uint32(rows.cursorId),
+			id:          blobId,
+			owned:       false,
+			maxLength:   INT_MAX_VALUE,
+		}
+		dest, err = cloudblob.getBytes()
 
-	case CLOUD_TYPE_LONGVARBINARY,
-		CLOUD_TYPE_CLOB:
-//		clobId := int64(binary.BigEndian.Uint64(b[pos:pos+8]))
-		pos += 8
-
-	case CLOUD_TYPE_LONGVARCHAR,
-		CLOUD_TYPE_ARRAY:
-		valueLen := int32(binary.BigEndian.Uint32(b[pos:pos+4]))
-		pos += 4
-		//read Comparable (valueLen)
-
-	case CLOUD_TYPE_GROUPING:
-		pos++
-	case CLOUD_TYPE_X2_LONG:
-		int64(binary.BigEndian.Uint64(b[pos:pos+8]))
-		pos += 8
-		int64(binary.BigEndian.Uint64(b[pos:pos+8]))
-		pos += 8
-		b[pos]
-		pos++
-		b[pos]
-		pos++
-	case CLOUD_TYPE_NULL:
-		dest = nil
-*/
 	case CLOUD_TYPE_ZONE_AUTO_SEQUENCE:
-//		int32(binary.BigEndian.Uint32(b[pos:pos+4]))
+		//int32(binary.BigEndian.Uint32(b[pos:pos+4]))
 		pos += 4
-//		int64(binary.BigEndian.Uint64(b[pos:pos+8]))
+		//int64(binary.BigEndian.Uint64(b[pos:pos+8]))
 		pos += 8
-/*
-	case CLOUD_TYPE_JSON_OBJECT:
-		jsonElementSize := int32(binary.BigEndian.Uint32(b[pospos+4:]))
-		pos += 4
-	case CLOUD_TYPE_BFILE:
-*/
+		/*
+			case CLOUD_TYPE_JSON_OBJECT:
+				jsonElementSize := int32(binary.BigEndian.Uint32(b[pospos+4:]))
+				pos += 4
+			case CLOUD_TYPE_BFILE:
+		*/
 	default:
 		err = errors.New("error readObject field type not be defined")
 	}
@@ -1032,7 +1062,7 @@ func ReadLengthEncodedString(b []byte) ([]byte, bool, int, error) {
 
 	// Check data length
 	if len(b) >= length {
-		return b[4 : length], false, length, nil
+		return b[4:length], false, length, nil
 	}
 	return nil, false, 4, io.EOF
 }
@@ -1341,19 +1371,19 @@ func whichExecute(sql string) byte {
 	for i := 0; i < length; i++ {
 		if buf[i] >= 'a' && buf[i] <= 'z' {
 			if (i + 9) <= length {
-				str = string(buf[i : i + 9])
+				str = string(buf[i : i+9])
 			}
 			if strings.EqualFold(str, "CloudWave") {
 				return CLOUDWAVE_SELFUSEDRIVE
 			}
 			if (i + 6) <= length {
-				str = string(buf[i : i + 6])
+				str = string(buf[i : i+6])
 			}
 			break
 		}
 	}
 	if strings.EqualFold(str, "select") {
-		return	CLOUDWAVE_EXECUTE_QUERY
+		return CLOUDWAVE_EXECUTE_QUERY
 	} else {
 		if strings.EqualFold(str, "insert") || strings.EqualFold(str, "update") || strings.EqualFold(str, "delete") {
 			return CLOUDWAVE_EXECUTE_UPDATE
@@ -1361,5 +1391,3 @@ func whichExecute(sql string) byte {
 	}
 	return CLOUDWAVE_EXECUTE
 }
-
-

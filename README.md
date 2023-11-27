@@ -66,7 +66,7 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/go-sql-driver/cloudwave"
 )
 
 // ...

@@ -12,7 +12,7 @@ import (
 	"database/sql/driver"
 	"io"
 	"math"
-//	"reflect"
+	//	"reflect"
 )
 
 type resultSet struct {
@@ -22,15 +22,14 @@ type resultSet struct {
 }
 
 type cwRows struct {
-//	mc     *cwConn
+	//	mc     *cwConn
 	stmt   *cwStmt
 	rs     resultSet
 	finish func()
 
-	stmtId			int32
-	cursorId		int32
-	isQuery			byte
-	resultCount     int64
+	cursorId    int32
+	isQuery     byte
+	resultCount int64
 }
 
 type binaryRows struct {
@@ -67,6 +66,10 @@ func (rows *cwRows) Columns() []string {
 
 func (rows *cwRows) ColumnTypeDatabaseTypeName(i int) string {
 	return rows.rs.columns[i].typeDatabaseName()
+}
+
+func (rows *cwRows) ColumnTypeLength(i int) (length int64, ok bool) {
+	return int64(rows.rs.columns[i].length), true
 }
 
 func (rows *cwRows) ColumnTypeNullable(i int) (nullable, ok bool) {

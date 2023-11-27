@@ -8,10 +8,10 @@
 //
 // The driver should be used via the database/sql package:
 //
-//  import "database/sql"
-//  import _ "github.com/go-sql-driver/cloudwave"
+//	import "database/sql"
+//	import _ "github.com/go-sql-driver/cloudwave"
 //
-//  db, err := sql.Open("cloudwave", "user:password@/dbname")
+//	db, err := sql.Open("cloudwave", "user:password@/dbname")
 //
 // See https://github.com/go-sql-driver/cloudwave#usage for details
 package cloudwave

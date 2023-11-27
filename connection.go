@@ -35,7 +35,7 @@ type cwConn struct {
 	writeTimeout     time.Duration
 	flags            clientFlag
 	status           statusFlag
-	sequence         uint8	// sequence for read packet
+	sequence         uint8 // sequence for read packet
 	parseTime        bool
 	reset            bool // set when the Go SQL package calls ResetSession
 
@@ -47,25 +47,26 @@ type cwConn struct {
 	canceled atomicError // set non-nil if conn is canceled
 	closed   atomicBool  // set when conn is closed, before closech is closed
 
-	txBatchFlag      bool
+	txBatchFlag bool
 
-//add vars for cloudwave
-	sessionTime		uint64
-	sessionSequence	uint64
-	sessionToken	uint64
+	//add vars for cloudwave
+	sessionTime     uint64
+	sessionSequence uint64
+	sessionToken    uint64
 
-	execType	byte
+	execType byte
 }
 
-const DATAAREALEN	= 32
-const DataAvailableTime = 3  //Seconds
+const DATAAREALEN = 32
+const DataAvailableTime = 3 //Seconds
 type stru_dataArea struct {
-	dataLock sync.Mutex
-	dataPoint int
-	dataUnusable [DATAAREALEN]bool
+	dataLock      sync.Mutex
+	dataPoint     int
+	dataUnusable  [DATAAREALEN]bool
 	dataTimestamp [DATAAREALEN]time.Time
-	data [DATAAREALEN][]byte
+	data          [DATAAREALEN][]byte
 }
+
 var dataArea stru_dataArea
 
 func pushData(b []byte) int {
@@ -100,9 +101,9 @@ func pushData(b []byte) int {
 			}
 		}
 	}
-//	if dataArea[dataAreaPoint] == nil || len(dataArea[dataAreaPoint]) < len(b) {
-		dataArea.data[dataArea.dataPoint] = make([]byte, len(b))
-//	}
+	//	if dataArea[dataAreaPoint] == nil || len(dataArea[dataAreaPoint]) < len(b) {
+	dataArea.data[dataArea.dataPoint] = make([]byte, len(b))
+	//	}
 	copy(dataArea.data[dataArea.dataPoint], b)
 	dataArea.dataUnusable[dataArea.dataPoint] = true
 	dataArea.dataTimestamp[dataArea.dataPoint] = tm
@@ -232,7 +233,7 @@ func (mc *cwConn) error() error {
 
 func (mc *cwConn) createStatement() (*cwStmt, error) {
 	stmt := &cwStmt{
-		mc: mc,
+		mc:       mc,
 		stmtType: CONNECTION_CREATE_STATEMENT,
 	}
 	resultdata, err := mc.requestServer(CONNECTION_CREATE_STATEMENT)
@@ -245,10 +246,9 @@ func (mc *cwConn) createStatement() (*cwStmt, error) {
 		if resultdata[0] == iOK {
 			if resultdatalen >= 5 {
 				stmt.id = binary.BigEndian.Uint32(resultdata[1:])
-				stmt.executeSequence = 0;
+				stmt.executeSequence = 0
 				stmt.paramCount = 0
 				stmt.paramType = nil
-				stmt.cursorId = 0
 				return stmt, nil
 			}
 		}
@@ -257,10 +257,15 @@ func (mc *cwConn) createStatement() (*cwStmt, error) {
 	return nil, err
 }
 
+func (mc *cwConn) UseSchema() error {
+	err := mc.exec("USE " + mc.cfg.DBName)
+	return err
+}
+
 func (mc *cwConn) setAutoCommit(autoCommit bool) error {
 	data, err := mc.buf.takeBuffer(26)
 	if err != nil {
-		return ErrBusyBuffer
+		return err
 	}
 	if autoCommit {
 		data[25] = 1
@@ -290,13 +295,13 @@ func (mc *cwConn) Prepare(query string) (driver.Stmt, error) {
 	if err != nil {
 		// cannot take the buffer. Something must be wrong with the connection
 		errLog.Print(err)
-		return nil, errBadConnNoWrite
+		return nil, err
 	}
 	pos := 25
 	binary.BigEndian.PutUint32(data[pos:], uint32(len(query)))
 	pos += 4
 	pos += copy(data[pos:], query)
-	binary.BigEndian.PutUint32(data[pos:], uint32(2))	//NO_GENERATED_KEYS=2
+	binary.BigEndian.PutUint32(data[pos:], uint32(2)) //NO_GENERATED_KEYS=2
 	pos += 4
 	mc.setCommandPacket(CONNECTION_PREPARED_STATEMENT, pos, data[0:25])
 
@@ -306,7 +311,7 @@ func (mc *cwConn) Prepare(query string) (driver.Stmt, error) {
 	}
 
 	stmt := &cwStmt{
-		mc: mc,
+		mc:       mc,
 		stmtType: CONNECTION_PREPARED_STATEMENT,
 	}
 
@@ -431,7 +436,6 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 	if mc.execType == CLOUDWAVE_SELFUSEDRIVE {
 		var buf []byte
 		var err error
-		byteflag := false
 		cmd := -10000
 		if len(args) > 0 {
 			switch v := args[0].(type) {
@@ -440,10 +444,6 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 			}
 		}
 		if cmd > -10000 {
-			if cmd >= 10000 {
-				byteflag = true
-				cmd -= 10000
-			}
 			if len(args) == 1 {
 				err = mc.writeCommandPacket(cmd)
 			} else {
@@ -469,20 +469,16 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 						binary.BigEndian.PutUint64(data[pos:pos+8], uint64(v))
 						pos += 8
 					case []byte:
-						if byteflag {
-							pos += copy(data[pos:], v)
+						pos++
+						if v == nil {
+							data[pos-1] = 1
+							continue
 						} else {
-							pos++
-							if v == nil {
-								data[pos-1] = 1
-								continue
-							} else {
-								data[pos-1] = 0
-							}
-							n := copy(data[pos+4:], v)
-							binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
-							pos += (4 + n)
+							data[pos-1] = 0
 						}
+						n := copy(data[pos+4:], v)
+						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
+						pos += (4 + n)
 					case string:
 						n := copy(data[pos+4:], v)
 						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
@@ -533,7 +529,7 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 	}
 	if len(args) != 0 {
 		if !mc.cfg.InterpolateParams {
-//			return nil, driver.ErrSkip
+			//			return nil, driver.ErrSkip
 		}
 		// try to interpolate the parameters to save extra roundtrips for preparing and closing a statement
 		prepared, err := mc.interpolateParams(query, args)
@@ -568,7 +564,7 @@ func (mc *cwConn) exec(query string) error {
 		return mc.markBadConn(err)
 	}
 
-	// Read Result
+	// Read ResultEXECUTE_STATEMENT
 	resLen, _, err := stmt.readResultSetHeaderPacket2()
 	if err != nil {
 		return err
@@ -596,6 +592,7 @@ func (mc *cwConn) Query(query string, args []driver.Value) (driver.Rows, error) 
 type ssss struct {
 	ss [10]string
 }
+
 func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 	var err error
 	var cmd int
@@ -607,7 +604,6 @@ func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 	}
 
 	mc.execType = whichExecute(query)
-	byteflag := false
 	if mc.execType == CLOUDWAVE_SELFUSEDRIVE {
 		cmd = -10000
 		if len(args) > 0 {
@@ -619,14 +615,10 @@ func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 		if cmd <= -10000 {
 			return nil, errors.New("command code is error")
 		}
-		if cmd >= 10000 {
-			byteflag = true
-			cmd -= 10000
-		}
 	} else {
 		if len(args) != 0 {
 			if !mc.cfg.InterpolateParams {
-//				return nil, driver.ErrSkip
+				//				return nil, driver.ErrSkip
 			}
 			// try client-side prepare to reduce roundtrip
 			prepared, err := mc.interpolateParams(query, args)
@@ -667,20 +659,16 @@ func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 					binary.BigEndian.PutUint64(data[pos:pos+8], uint64(v))
 					pos += 8
 				case []byte:
-					if byteflag {
-						pos += copy(data[pos:], v)
+					pos++
+					if v == nil {
+						data[pos-1] = 1
+						continue
 					} else {
-						pos++
-						if v == nil {
-							data[pos-1] = 1
-							continue
-						} else {
-							data[pos-1] = 0
-						}
-						n := copy(data[pos+4:], v)
-						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
-						pos += (4 + n)
+						data[pos-1] = 0
 					}
+					n := copy(data[pos+4:], v)
+					binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
+					pos += (4 + n)
 				case string:
 					n := copy(data[pos+4:], v)
 					binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
@@ -735,7 +723,7 @@ func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 		}
 	}
 	if mc.execType == CLOUDWAVE_SELFUSEDRIVE {
-//		rows.resultCount = rows.ResultSetRecordCount()
+		//		rows.resultCount = rows.ResultSetRecordCount()
 	}
 	return rows, nil
 }
@@ -790,7 +778,6 @@ func (mc *cwConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx
 	mc.txBatchFlag = true
 	mc.setAutoCommit(false)
 
-
 	defer mc.finish()
 
 	if sql.IsolationLevel(opts.Isolation) != sql.LevelDefault {
@@ -798,7 +785,7 @@ func (mc *cwConn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx
 
 		data, err := mc.buf.takeBuffer(29)
 		if err != nil {
-			return nil, ErrBusyBuffer
+			return nil, err
 		}
 		binary.BigEndian.PutUint32(data[25:], uint32(level))
 		mc.setCommandPacket(SET_TRANSACTION_ISOLATION, 29, data[0:25])

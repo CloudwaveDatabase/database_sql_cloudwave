@@ -2,276 +2,437 @@ package a_test
 
 import (
 	"database/sql"
-	//	"errors"
+	"database/sql/driver"
 	"fmt"
-	_ "cloudwave"
 	"log"
+	"os"
+	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"testing"
 	"time"
 )
 
-func checkErr(err error){
-	if err != nil{
+func checkErr(err error) {
+	if err != nil {
 		log.Fatal(err)
+		//panic (err)
 	}
 }
 
-type DbWorker struct {
-	Dsn      string
-	Db       *sql.DB
+func OpenDB() (*sql.DB, error) {
+	var db *sql.DB
+	var err error
+	// db, err = sql.Open("cloudwave", "用户名:密码@IP:端口)/数据库")
+	//	db, err = sql.Open("cloudwave", "system:CHANGEME@(127.0.0.1:1978)/itest")
+	db, err = sql.Open("cloudwave", "system:CHANGEME@(127.0.0.1:1978)/test")
+	if err != nil {
+		panic(err)
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		panic(err)
+		defer db.Close()
+		return nil, err
+	}
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+	return db, err
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-func (db *DbWorker) testTx() {
-	tx, err := db.Db.Begin()
+func InsertDB1() {
+	db, err := OpenDB()
 	checkErr(err)
-
-	stmt1, err := tx.Prepare("insert into toutiao.testtable7 values(?, ?)")
+	// defer关闭数据库连接
+	defer db.Close()
+	// 执行插入记录语句
+	result, err := db.Exec("insert into itest.userinfo values(10,'张三','上海', ?)", time.Now())
 	checkErr(err)
-	result, err := stmt1.Exec(1118, -1235)
-	checkErr(err)
-	id, err := result.LastInsertId()
-	fmt.Println("LastInsertId = ", id)
-
-	stmt1.Close()
-
-	tx.Commit()
-//	tx.Rollback()
-
-
-/*
-	tx, err = db.Db.Begin()
-	checkErr(err)
-
-	stmt2, err := tx.Prepare("select col_long,col_char from toutiao.testtable2 where col_long=?")
-	checkErr(err)
-
-	id = 88
-	//查询数据
-	var ulong int64
-	var uchar string
-	err = stmt2.QueryRow(id).Scan(&ulong, &uchar)
-	checkErr(err)
-	fmt.Println("ulong = %ld, uchar is ", ulong, uchar)
-	defer stmt2.Close()
-*/
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-func (db *DbWorker) testDbExec() {
-
-	i := 100
-//	result, err := db.Db.Exec("INSERT INTO toutiao.testtable  VALUES (2, 3, 4.5, 6.7, 8.9, true, 'a', 'bcd', ?, '2021-09-27 20:03:01', null, null)", "2021-07-01")
-	result, err := db.Db.Exec("INSERT INTO toutiao.testtable4  VALUES (201, ?)", "2021-07-01")
-	if err != nil {
-	}
-	i++
-	result, err = db.Db.Exec("INSERT INTO toutiao.testtable3  VALUES (?, ?)", i, i * 10)
-	if err != nil {
-	}
-	i++
-	result, err = db.Db.Exec("INSERT INTO toutiao.testtable3  VALUES (?, ?)", i, i * 10)
-	if err != nil {
-	}
-	i++
-
-//	result, err := db.Exec("INSERT INTO toutiao.testtable2 (col_long, col_char) VALUES (?, ?)",3456,"yyabcdef")
-//	if err != nil {
-//	}
-
-	result, err = db.Db.Exec("UPDATE toutiao.testtable3 set col_long = ? where col_int = ?",888, 1020)
-//	result, err := db.Exec("UPDATE toutiao.testtable2 set col_long=5555 where col_char='rrrrrrr'")
-	if err != nil {
-	}
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		checkErr(err)
-	}
-	fmt.Println("UPDATE rowsAffected = ", rowsAffected)
-
-	result, err = db.Db.Exec("DELETE FROM toutiao.testtable3 where col_long=?", 100)
-	if err != nil {
-	}
-
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		checkErr(err)
-	}
-	fmt.Println("DELETE rowsAffected = ", rowsAffected)
-
-	println(result)
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-func (db *DbWorker) testDbQuery() {
-//	rows,err:=db.Db.Query("select name,period from exhibitor_production where name='医圣'")
-//	rows,err:=db.Db.Query("select  from POSTID='505342300944138' or AREA='阿曼/阿联酋/卡塔尔'")
-//	rows,err:=db.Db.Query("select AREA, photoid from tecno.facebook_posts where photoid='592769867868048' or photoid='592316527913382'")
-//	rows,err:=db.Db.Query("select CATEGORY,CONTENT from tecno.news_table where content contains '上海'")
-//	rows,err:=db.Db.Query("select CATEGORY,YEAR from toutiao.col_longcolint,news_table where ID = '104308';")
-
-	i := 112
-  	result, err := db.Db.Exec("INSERT INTO toutiao.testtable8  VALUES (?, ?)", i, "-1234567890123.1234567891")
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		checkErr(err)
-	}
+	rowsAffected, _ := result.RowsAffected()
 	fmt.Println("INSERT rowsAffected = ", rowsAffected)
-	rows,err:=db.Db.Query("select col_long,col_number from toutiao.testtable8 where col_long = ?;", i)
-	// 	toutiao.testtable
-	if err != nil{
-		panic(err)
-	}
-	defer rows.Close()
-	c1 := 0
-	c2 := ""
-	for rows.Next(){
-		err = rows.Scan(&c1, &c2)
-		if err != nil{
-			panic(err)
-		}
-		fmt.Println("C1 = ", c1)
-		fmt.Println("C2 = ", c2)
-	}
 }
 
-//////////////////////////////////////////////////////////////////////////////////////
-func (db *DbWorker) testDbQueryRow() {
-	dd := 101
-	s1 := 0
-	s2 := ""
-	err := db.Db.QueryRow("select * from toutiao.testtable4 where col_long=?", dd).Scan(&s1, &s2) //即将得到的name值转换成s.String类型并存储到&s中
-	if err != nil{
-		panic(err)
-	}
-
-	fmt.Println("S1 = ", s1)
-	fmt.Println("S2 = ", s2)
-}
-
-//////////////////////////////////////////////////////////////////////////////////////
-func (db *DbWorker) testPrepareExec() {
-//	stmt, err := db.Db.Prepare("insert into toutiao.testtable(col_integer,col_long,col_float,col_double,col_number,col_boolean,col_char,col_varchar,col_date,col_timestamp,col_binary,col_varbinary) values(2, ?, 4.5, 6.7, 8.9, true, ?, 'bcd', '2021-09-27', '2021-09-27 20:03:01', null, null)")
-//	stmt, err := db.Db.Prepare("insert into toutiao.testtable2 values(?, ?)")
-//	stmt, err := db.Db.Prepare("insert into toutiao.testtable2 values(?, ?)")	//OK
-	stmt, err := db.Db.Prepare("insert into toutiao.testtable2 values(?, ?)")
-	//	stmt, err := db.Prepare("update toutiao.testtable2 set col_char=? where col_long=?")
-	if err != nil{
-		panic(err)
-	}
-//	stmt.setAutoCommit(true)
-
-	//执行准备好的Stmt
-	res, err := stmt.Exec(123001, "asdfgh1")
-	if err != nil{
-		panic(err)
-	}
-
-	res, err = stmt.Exec(123002, "asdfgh2")
-	if err != nil{
-		panic(err)
-	}
-
-	res, err = stmt.Exec(123003, "asdfgh3")
-	if err != nil{
-		panic(err)
-	}
-	if res != nil {
-	}
-	time.Sleep(time.Second * 1)
-	stmt.Close()
-
-	stmt, err = db.Db.Prepare("delete from toutiao.testtable2 where col_long=?")
-	res, err = stmt.Exec(123001)
-	if err != nil{
-		panic(err)
-	}
-//	stmt.mc.setAutoCommit(true)
-//	res, err = stmt.Exec(123002)
-//	if err != nil{
-//		panic(err)
-//	}
-	res, err = stmt.Exec(123003)
-	if err != nil{
-		panic(err)
-	}
-
-/*
+func InsertDB2() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 准备语句
+	stmt, err := db.Prepare("insert into itest.userinfo values(?, ?, ?, ?)")
+	checkErr(err)
+	// defer关闭Prepare方法准备的语句
+	defer stmt.Close()
+	// 插入各记录
+	res, err := stmt.Exec(11, "李四", "北京", time.Now())
+	checkErr(err)
 	id, err := res.LastInsertId()
-	if err != nil{
-		panic(err)
-	}
-	t.Log("ID : ", id)
-*/
-	time.Sleep(time.Second * 1)
-	stmt.Close()
-
-
-	time.Sleep(time.Second * 2)
+	fmt.Println("INSERT dataID = ", id)
+	res, err = stmt.Exec(12, "王五", "广州", time.Now())
+	checkErr(err)
+	id, err = res.LastInsertId()
+	fmt.Println("INSERT dataID = ", id)
 }
 
-func (db *DbWorker) testPrepareQuery() {
-	stmt, err := db.Db.Prepare("select col_long, col_char from toutiao.testtable2 where col_long=?")
+func InsertDB3() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 准备语句
+	stmt, err := db.Prepare("insert into itest.userinfo values(?, ?, ?, ?)")
+	checkErr(err)
+	// defer关闭Prepare方法准备的语句
+	defer stmt.Close()
+	// 利用循环插入多条记录
+	i := 100
+	for i < 200 {
+		// 插入数据
+		res, err := stmt.Exec(i, "name", "addr", time.Now())
+		checkErr(err)
+		rowsAffected, err := res.RowsAffected()
+		checkErr(err)
+		if rowsAffected != 1 {
+			fmt.Println("INSERT rowsAffected = ", rowsAffected)
+		}
+		i++
+	}
+}
+
+func InsertDB4() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 开始事务
+	tx, err := db.Begin()
+	checkErr(err)
+	stmt, err := tx.Prepare("insert into itest.userinfo values(?, ?, ?, ?)")
+	checkErr(err)
+	// defer关闭Prepare方法准备的语句
+	defer stmt.Close()
+	i := 300
+	for i < 400 {
+		// 插入不同类型的值
+		res, err := stmt.Exec(i, "name", "addr", time.Now())
+		checkErr(err)
+		rowsAffected, err := res.RowsAffected()
+		checkErr(err)
+		if rowsAffected != 1 {
+			fmt.Println("INSERT rowsAffected = ", rowsAffected)
+		}
+		i++
+	}
+	if i >= 400 {
+		tx.Commit()
+	} else {
+		tx.Rollback()
+	}
+}
+
+func UpdateDB() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 进行修改
+	result, err := db.Exec("UPDATE itest.userinfo set addr = ? where id = ?", "天津", 10)
+	checkErr(err)
+	// 查看本次修改影响到多少条记录
+	rowsAffected, err := result.RowsAffected()
+	checkErr(err)
+	fmt.Println("UPDATE rowsAffected = ", rowsAffected)
+}
+
+func SelectDB1() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	nm := "张三"
+	id := 0
+	name := ""
+	addr := ""
+	created := ""
+	// 即将得到的name值转换成s.String类型并存储到&s中
+	err = db.QueryRow("select * from itest.userinfo where name=?", nm).Scan(&id, &name, &addr, &created)
+	checkErr(err)
+	fmt.Println("id = ", id)
+	fmt.Println("name = ", name)
+	fmt.Println("addr = ", addr)
+	fmt.Println("created = ", created)
+}
+
+func SelectDB2() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 查询数据
+	rows, err := db.Query("select name, addr from itest.userinfo where id >= ?;", 10)
+	checkErr(err)
+	defer rows.Close()
+	name := ""
+	addr := ""
+	// 扫描结果集
+	for rows.Next() {
+		// 接收每条记录的字段内容
+		err = rows.Scan(&name, &addr)
+		checkErr(err)
+		fmt.Print("name = ", name)
+		fmt.Println("   addr = ", addr)
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+	}
+}
+
+func SelectDB3() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 查询数据
+	rows, err := db.Query("select * from ssb1.lineorder;")
+	cols, err := rows.Columns()
+	vals := make([]interface{}, len(cols))
+	checkErr(err)
+	defer rows.Close()
+	// 扫描结果集
+	for i, _ := range cols {
+		vals[i] = new(sql.RawBytes)
+	}
+	for rows.Next() {
+		// 接收每条记录的字段内容
+		err = rows.Scan(vals...)
+		checkErr(err)
+		for i := 0; i < len(vals); i++ {
+			var n32 int32
+			var n64 int64
+			var f32 float32
+			var f64 float64
+			var str string
+			var buf []byte
+
+			dd := driver.Value(vals[i])
+			fmt.Print("vals[", i, "] = ")
+			switch v := dd.(type) {
+			case byte:
+			case int:
+				n32 = int32(v)
+				fmt.Println(n32)
+			case int32:
+				n32 = v
+				fmt.Println(n32)
+			case int64:
+				n64 = v
+				fmt.Println(n64)
+			case float32:
+				f32 = v
+				fmt.Println(f32)
+			case float64:
+				f64 = v
+				fmt.Println(f64)
+			case []byte:
+				buf = v
+				fmt.Println(buf)
+			case string:
+				str = v
+				fmt.Println(str)
+				//			case time.Time:
+				//				fmt.Println((time(v))
+			default:
+				fmt.Println(v)
+			}
+		}
+		fmt.Println()
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+	}
+}
+
+func DeleteDB() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 进行修改
+	result, err := db.Exec("DELETE FROM itest.userinfo where id=?", 10)
+	checkErr(err)
+	// 查看本次删除影响到多少条记录
+	rowsAffected, err := result.RowsAffected()
+	checkErr(err)
+	fmt.Println("DELETE rowsAffected = ", rowsAffected)
+}
+
+func InsertCLOB(data string) {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 执行插入记录语句
+	//result, err := db.Exec("insert into test.userclob values(20,'张三','上海1234567890abcdefghi')")
+	stmt, er := db.Prepare("INSERT INTO test.userclob(ID, NAME, LOGF) VALUES (?, ?, ?)")
+	if er != nil {
+		panic(err.Error())
+	}
+	//data1 := "12234567890"
+	_, err = stmt.Exec(50, "QWER1", data)
+
+	checkErr(err)
+	//rowsAffected, _ := result.RowsAffected()
+	//fmt.Println("INSERT rowsAffected = ", rowsAffected)
+}
+
+func InsertBLOB() {
+	var data []byte
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 执行插入记录语句
+	stmt, er := db.Prepare("INSERT INTO test.userblob(ID, NAME, LOGF) VALUES (?, ?, ?)")
+	if er != nil {
+		panic(err.Error())
+	}
+	data = []byte("92234567890")
+	_, err = stmt.Exec(115, "QWER99", data)
 	if err != nil {
-		panic(err)
+		panic(err.Error())
 	}
 	defer stmt.Close()
+	//result, err := db.Exec("insert into test.userblob values(20,'张三','上海1234567890abcdefghi')")
+	checkErr(err)
+	//rowsAffected, _ := result.RowsAffected()
+	//fmt.Println("INSERT rowsAffected = ", rowsAffected)
+}
 
-	rows, err := stmt.Query(88)
-	if err != nil {
-		panic(err)
-	}
+func SelectCLOB() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	id := 0
+	name := ""
+	clobf := ""
+	// 即将得到的name值转换成s.String类型并存储到&s中
+	err = db.QueryRow("select * from test.userclob where id=50").Scan(&id, &name, &clobf)
+	checkErr(err)
+	fmt.Println("id = ", id)
+	fmt.Println("name = ", name)
+	fmt.Println("clobf = ", clobf)
+}
+
+func SelectBLOB() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	var lobf []byte
+	id := 0
+	name := ""
+	// 即将得到的name值转换成s.String类型并存储到&s中
+	err = db.QueryRow("select * from test.userblob where id=115").Scan(&id, &name, &lobf)
+	checkErr(err)
+	fmt.Println("id = ", id)
+	fmt.Println("name = ", name)
+	fmt.Println("lobf = ", lobf)
+}
+
+func SelectTime() {
+	db, err := OpenDB()
+	checkErr(err)
+	// defer关闭数据库连接
+	defer db.Close()
+	// 查询数据
+	rows, err := db.Query("select * from test.product;")
+	cols, err := rows.Columns()
+	vals := make([]interface{}, len(cols))
+	checkErr(err)
 	defer rows.Close()
+	// 扫描结果集
+	for i, _ := range cols {
+		vals[i] = new(sql.RawBytes)
+	}
 
-	c1 := 0
-	c2 := ""
 	for rows.Next() {
-		err = rows.Scan(&c1, &c2)
-		if err != nil {
-			fmt.Printf(err.Error())
-			continue
+		// 接收每条记录的字段内容
+		err = rows.Scan(vals...)
+		checkErr(err)
+		for i := 0; i < len(vals); i++ {
+			var n32 int32
+			var n64 int64
+			var f32 float32
+			var f64 float64
+			var str string
+			var buf []byte
+
+			dd := driver.Value(vals[i])
+			fmt.Print("vals[", i, "] = ")
+			switch v := dd.(type) {
+			case byte:
+			case int:
+				n32 = int32(v)
+				fmt.Println(n32)
+			case int32:
+				n32 = v
+				fmt.Println(n32)
+			case int64:
+				n64 = v
+				fmt.Println(n64)
+			case float32:
+				f32 = v
+				fmt.Println(f32)
+			case float64:
+				f64 = v
+				fmt.Println(f64)
+			case []byte:
+				buf = v
+				fmt.Println(buf)
+			case string:
+				str = v
+				fmt.Println(str)
+				//			case time.Time:
+				//				fmt.Println((time(v))
+			default:
+				fmt.Println(v)
+			}
 		}
-		fmt.Println("C1 = ", c1)
-		fmt.Println("C2 = ", c2)
+		fmt.Println()
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
 	}
 }
 
-func (db *DbWorker) testPrepare() {
-}
-
-///         main        //////////////////////////////////////////////////////////////
+// /         main        //////////////////////////////////////////////////////////////
 func TestA(t *testing.T) {
 
-	dbw := DbWorker{
-		Dsn: "system:CHANGEME@(127.0.0.1:1978)/toutiao",              //本机翰云
-//		Dsn: "root:cloudwave1@(82.156.106.27:30307)/data_from_cbbpa", //服务器翰云
-//		Dsn: "tecno:tecno@(82.156.106.27:1978)/tecno",                //服务器翰云
-//		Dsn: "system:CHANGEME@(82.156.106.27:1978)/tecno",            //服务器翰云
-	}
-	var err error
-	dbw.Db, err = sql.Open("cloudwave", dbw.Dsn)
+	f, err := os.Open("D:\\CloudWave\\新程序4.0\\wisdomdata\\out.txt")
 	if err != nil {
-		panic(err)
-		return
+		fmt.Println("read file fail", err)
 	}
-	// See "Important settings" section.
-	dbw.Db.SetConnMaxLifetime(time.Minute * 3)
-	dbw.Db.SetMaxOpenConns(10)
-	dbw.Db.SetMaxIdleConns(10)
+	defer f.Close()
 
-	defer dbw.Db.Close()
+	//fd, err := ioutil.ReadAll(f)
+	//if err != nil {
+	//	fmt.Println("read to fd fail", err)
+	//}
+	//fmt.Println(string(fd))
 
-//	err = db.Ping()
-//	if err != nil {
-//		panic(err)
-//	}
-
-//	dbw.testTx()			//OK
-//	dbw.testDbExec()		//OK
-	dbw.testDbQuery()		//OK
-//	dbw.testDbQueryRow()	//OK
-//	dbw.testPrepareExec()	//not OK
-//	dbw.testPrepareQuery()	//OK
-
-	t.Log("end")
+	//InsertCLOB(string(fd))
+	//InsertCLOB("123qwe456uio7890zxcv")
+	//InsertBLOB()
+	//SelectTime()
+	//SelectCLOB()
+	SelectBLOB()
+	//InsertDB1() //OK
+	//	InsertDB2()
+	//InsertDB3()
+	//InsertDB4()
+	//	UpdateDB() //OK
+	//	SelectDB1() //OK
+	//	SelectDB2() //OK
+	//SelectDB3()
+	//	DeleteDB() //OK
 }

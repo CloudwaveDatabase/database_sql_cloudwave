@@ -35,8 +35,9 @@ var (
 	// to trigger a resend.
 	// See https://github.com/go-sql-driver/cloudwave/pull/302
 	errBadConnNoWrite = errors.New("bad connection")
-	errCloseStatement    = errors.New("error Close Statement")
-	errRequestHead       = errors.New("error Request [0] != 0")
+	errCloseStatement = errors.New("error Close Statement")
+	errRequestHead    = errors.New("error Request [0] != 0")
+	errSReadResult    = errors.New("error read result parameters")
 )
 
 var errLog = Logger(log.New(os.Stderr, "[cloudwave] ", log.Ldate|log.Ltime|log.Lshortfile))
@@ -58,8 +59,8 @@ func SetLogger(logger Logger) error {
 
 // CloudWaveError is an error type which represents a single MySQL error
 type CloudWaveError struct {
-	briefMessage  string
-	Message string
+	briefMessage string
+	Message      string
 }
 
 func (me *CloudWaveError) Error() string {

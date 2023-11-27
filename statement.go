@@ -18,13 +18,13 @@ import (
 )
 
 type cwStmt struct {
-	mc         *cwConn
-	stmtType   byte
-	id         uint32
+	mc              *cwConn
+	stmtType        byte
+	id              uint32
 	executeSequence int
-	cursorId   int
-	paramCount int
-	paramType  []byte
+	cursorId        int32
+	paramCount      int
+	paramType       []byte
 }
 
 func (stmt *cwStmt) Close() error {
@@ -40,31 +40,29 @@ func (stmt *cwStmt) Close() error {
 	pktLen := 25 + 4
 	data, err := stmt.mc.buf.takeBuffer(pktLen)
 	if err != nil {
-		return ErrBusyBuffer
+		return err
 	}
 
 	pos := 25
 	binary.BigEndian.PutUint32(data[pos:], uint32(stmt.id))
 	pos += 4
-//	if stmt.stmtType == CONNECTION_PREPARED_STATEMENT {
-//		err = stmt.mc.setCommandPacket(CLOSE_PREPARED_STATEMENT, pos, data[0:pos])
-//	} else {
-		err = stmt.mc.setCommandPacket(CLOSE_STATEMENT, pos, data[0:pos])
-//	}
-//	if stmt.stmtType != CONNECTION_PREPARED_STATEMENT {
-		err = stmt.mc.writePacket(data[0:pos])
+	//	if stmt.stmtType == CONNECTION_PREPARED_STATEMENT {
+	//		err = stmt.mc.setCommandPacket(CLOSE_PREPARED_STATEMENT, pos, data[0:pos])
+	//	} else {
+	err = stmt.mc.setCommandPacket(CLOSE_STATEMENT, pos, data[0:pos])
+	//	}
+	//	if stmt.stmtType != CONNECTION_PREPARED_STATEMENT {
+	err = stmt.mc.writePacket(data[0:pos])
+	if err == nil {
+		buf, err := stmt.mc.readResultOK()
 		if err == nil {
-			buf, err := stmt.mc.readResultOK()
-			if err == nil {
-				if buf != nil {
-					id := binary.BigEndian.Uint32(buf[1:])
-					if id != stmt.id {
-						return errCloseStatement
-					}
-				}
+			id := binary.BigEndian.Uint32(buf[1:])
+			if id != stmt.id {
+				return errCloseStatement
 			}
 		}
-//	}
+	}
+	//	}
 	stmt.mc = nil
 	return err
 }
@@ -170,7 +168,7 @@ func (stmt *cwStmt) Query(args []driver.Value) (driver.Rows, error) {
 	return stmt.query(args)
 }
 
-//func (stmt *cwStmt) query(args []driver.Value) (*binaryRows, error) {
+// func (stmt *cwStmt) query(args []driver.Value) (*binaryRows, error) {
 func (stmt *cwStmt) query(args []driver.Value) (*textRows, error) {
 	if stmt.mc.closed.IsSet() {
 		errLog.Print(ErrInvalidConn)

@@ -1,8 +1,7 @@
-package a
+package command
 
 import (
 	"database/sql"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/command"
 	"testing"
 	//	"errors"
 	"fmt"
@@ -19,8 +18,8 @@ func checkErr(err error) {
 
 ///         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
-	dbw := command.DbWorker{
-		Dsn: "tpch1:tpch1@(127.0.0.1:1978)/tpch1", //本机翰云
+	dbw := DbWorker{
+		Dsn: "system:CHANGEME@(127.0.0.1:1978)/toutiao", //本机翰云
 	}
 	var err error
 	dbw.Db, err = sql.Open("cloudwave", dbw.Dsn)
@@ -34,7 +33,7 @@ func TestB(t *testing.T) {
 	dbw.Db.SetMaxIdleConns(10)
 
 	//	dest, err := dbw.GetInfoNoparamCommon(GetNetworkStatus)
-	dest, err := dbw.GetInfoNoparamCommon(command.GetRuntimeReport)
+	dest, err := dbw.GetInfoNoparamCommon(GetRuntimeReport)
 	if err == nil && dest != nil {
 		switch v := dest.(type) {
 		case []byte:
@@ -99,42 +98,4 @@ func TestB(t *testing.T) {
 
 	dbw.Db.Close()
 	fmt.Println("end")
-}
-
-func TestExec(t *testing.T) {
-
-	dsn := "system:CHANGEME@(127.0.0.1:1978)/ssb1"
-	db, err := sql.Open("cloudwave", dsn)
-	if err != nil {
-		t.Error(err)
-	}
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
-	rows, err := db.Query("select * from ssb1.lineorder")
-	if err != nil {
-		t.Error(err)
-	}
-	defer rows.Close()
-	cols, err := rows.Columns()
-	if err != nil {
-		t.Error(err)
-	}
-	colsType, err := rows.ColumnTypes()
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(cols)
-	t.Log(colsType)
-	//defer rows.Close()
-	//var regions []Region
-	for rows.Next() {
-		t.Log("123")
-		//var t1, t2 string
-		//rows.Scan(&t1, &t2)
-		//t.Log(t1)
-		//t.Log(t2)
-	}
-	t.Log("result: ", rows)
 }

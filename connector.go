@@ -91,20 +91,21 @@ func (c *connector) Connect(ctx context.Context) (driver.Conn, error) {
 		return nil, err
 	}
 
+	mc.UseSchema()
 	mc.setAutoCommit(true)
 
 	if mc.cfg.MaxAllowedPacket > 0 {
 		mc.maxAllowedPacket = mc.cfg.MaxAllowedPacket
 	} else {
-/*
-		// Get max allowed packet size
-		maxap, err := mc.getSystemVar("max_allowed_packet")
-		if err != nil {
-			mc.Close()
-			return nil, err
-		}
-		mc.maxAllowedPacket = stringToInt(maxap) - 1
-*/
+		/*
+			// Get max allowed packet size
+			maxap, err := mc.getSystemVar("max_allowed_packet")
+			if err != nil {
+				mc.Close()
+				return nil, err
+			}
+			mc.maxAllowedPacket = stringToInt(maxap) - 1
+		*/
 		mc.maxAllowedPacket = 2147483647
 	}
 	if mc.maxAllowedPacket < maxPacketSize {
