@@ -1,7 +1,13 @@
 ##
 
 1. 添加 `GOINSEVURE` 环境变量
+
     GOINSECURE=gitlab.cloudwave.cn //此处设置私库域名
+   ![img.png](static/README/img.png)
+2. 关闭vpn，不然可能会出现下面的错误
+
+    ![img.png](static/README/img1.png)
+注意：如果本地浏览器访问 127.0.0.1能看到gitlab，使用proxy.cloudwave.cn却访问不到，这时请把vpn关掉，重启goland所有的窗口
 # Go-CloudWave-Driver
 
 A CloudWave-Driver for Go's [database/sql](https://golang.org/pkg/database/sql/) package
