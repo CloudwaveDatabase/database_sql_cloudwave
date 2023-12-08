@@ -1,3 +1,3 @@
-module proxy.cloudwave.cn/share/go-sql-driver/cloudwave
+module database_sql_cloudwave
 
 go 1.15
