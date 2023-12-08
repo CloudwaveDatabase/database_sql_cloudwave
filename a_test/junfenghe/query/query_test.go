@@ -1,8 +1,8 @@
 package query
 
 import (
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
+	_ "database_sql_cloudwave"
+	"database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 )
 

@@ -1,7 +1,7 @@
 package doc
 
 import (
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
+	"database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 	"time"
 )
