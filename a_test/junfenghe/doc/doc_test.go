@@ -1,7 +1,7 @@
 package doc
 
 import (
-	"database_sql_cloudwave/a_test/junfenghe/common"
+	"github.com/cloudwavedatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 	"time"
 )

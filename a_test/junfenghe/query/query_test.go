@@ -1,8 +1,8 @@
 package query
 
 import (
-	_ "database_sql_cloudwave"
-	"database_sql_cloudwave/a_test/junfenghe/common"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
+	"github.com/cloudwavedatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 )
 

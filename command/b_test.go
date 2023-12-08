@@ -2,8 +2,8 @@ package command
 
 import (
 	"database/sql"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
 	"testing"
-	_ "database_sql_cloudwave"
 	//	"errors"
 	"fmt"
 	"log"

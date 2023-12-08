@@ -3,8 +3,8 @@ package a_test
 import (
 	"database/sql"
 	"database/sql/driver"
-	_ "database_sql_cloudwave"
 	"fmt"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
 	"log"
 	"os"
 	"testing"

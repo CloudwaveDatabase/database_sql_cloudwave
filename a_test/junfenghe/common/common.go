@@ -2,7 +2,7 @@ package common
 
 import (
 	"database/sql"
-	_ "database_sql_cloudwave"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
 	"time"
 )
 

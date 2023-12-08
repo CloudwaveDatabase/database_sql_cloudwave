@@ -2,9 +2,9 @@ package a
 
 import (
 	"database/sql"
-	"database_sql_cloudwave/command"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
+	"github.com/cloudwavedatabase/database_sql_cloudwave/command"
 	"testing"
-	_ "database_sql_cloudwave"
 	//	"errors"
 	"fmt"
 	"log"
