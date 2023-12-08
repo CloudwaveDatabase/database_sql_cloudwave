@@ -2,12 +2,12 @@ package a
 
 import (
 	"database/sql"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/command"
+	"database_sql_cloudwave/command"
 	"testing"
+	_ "database_sql_cloudwave"
 	//	"errors"
 	"fmt"
 	"log"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"time"
 )
 

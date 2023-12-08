@@ -3,10 +3,10 @@ package a_test
 import (
 	"database/sql"
 	"database/sql/driver"
+	_ "database_sql_cloudwave"
 	"fmt"
 	"log"
 	"os"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"testing"
 	"time"
 )

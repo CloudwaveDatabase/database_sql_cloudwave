@@ -3,10 +3,10 @@ package command
 import (
 	"database/sql"
 	"testing"
+	_ "database_sql_cloudwave"
 	//	"errors"
 	"fmt"
 	"log"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"time"
 )
 
