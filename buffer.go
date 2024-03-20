@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const defaultBufSize = 4096
+const defaultBufSize = 4096 * 4
 const maxCachedBufSize = 256 * 1024
 
 // A buffer which is used for both reading and writing.
