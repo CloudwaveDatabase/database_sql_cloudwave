@@ -620,7 +620,7 @@ func (mc *cwConn) query(query string, args []driver.Value) (*textRows, error) {
 			if !mc.cfg.InterpolateParams {
 				//				return nil, driver.ErrSkip
 			}
-			// try client-side prepare to reduce roundtrip
+			// try client-side insert to reduce roundtrip
 			prepared, err := mc.interpolateParams(query, args)
 			if err != nil {
 				return nil, err
