@@ -771,6 +771,7 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 	}
 	pos += 4
 	i := 0
+	start := 1
 	for {
 		var scale int
 		if i >= len(dest) {
@@ -780,9 +781,14 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 		if err != nil {
 			break
 		}
-		if tp != CLOUD_TYPE_ZONE_AUTO_SEQUENCE {
+		if start != 1 {
 			i++
 		}
+		start = 0
+		if tp != CLOUD_TYPE_ZONE_AUTO_SEQUENCE {
+			//i++
+		}
+
 		pos += n
 		scale = scale
 		/*

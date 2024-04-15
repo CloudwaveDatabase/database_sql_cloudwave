@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -276,8 +278,9 @@ func InsertCLOB(data string) {
 	if er != nil {
 		panic(err.Error())
 	}
-	//data1 := "12234567890"
-	_, err = stmt.Exec(50, "QWER1", data)
+	fi, err := os.Stat("D:\\CloudWave\\test1.go")
+	_, err = stmt.Exec(115, "QWER99", fi)
+	//_, err = stmt.Exec(116, "QWER99", data)
 
 	checkErr(err)
 	//rowsAffected, _ := result.RowsAffected()
@@ -285,7 +288,7 @@ func InsertCLOB(data string) {
 }
 
 func InsertBLOB() {
-	var data []byte
+	//var data []byte
 	db, err := OpenDB()
 	checkErr(err)
 	// defer关闭数据库连接
@@ -295,8 +298,11 @@ func InsertBLOB() {
 	if er != nil {
 		panic(err.Error())
 	}
-	data = []byte("92234567890")
-	_, err = stmt.Exec(115, "QWER99", data)
+	//	data = []byte("92234567890")
+	//	_, err = stmt.Exec(115, "QWER99", data)
+	fi, err := os.Stat("D:\\CloudWave\\test.go")
+	_, err = stmt.Exec(118, "QWER999", fi)
+
 	if err != nil {
 		panic(err.Error())
 	}
@@ -314,13 +320,45 @@ func SelectCLOB() {
 	defer db.Close()
 	id := 0
 	name := ""
-	clobf := ""
+	var lobf any
+	var c *cloudwave.CloudClob
 	// 即将得到的name值转换成s.String类型并存储到&s中
-	err = db.QueryRow("select * from test.userclob where id=50").Scan(&id, &name, &clobf)
+	//err = db.QueryRow("select * from test.userclob where id=50").Scan(&id, &name, &clobf)
+	//checkErr(err)
+	//fmt.Println("id = ", id)
+	//fmt.Println("name = ", name)
+	//fmt.Println("clobf = ", clobf)
+
+	rows, err := db.Query("select * from test.userclob;")
+	cols, err := rows.Columns()
+	vals := make([]any, len(cols))
 	checkErr(err)
-	fmt.Println("id = ", id)
-	fmt.Println("name = ", name)
-	fmt.Println("clobf = ", clobf)
+	defer rows.Close()
+	// 扫描结果集
+	for i, _ := range cols {
+		vals[i] = new(sql.RawBytes)
+	}
+
+	n := 0
+	for rows.Next() {
+		// 接收每条记录的字段内容
+		err = rows.Scan(&id, &name, &lobf)
+		checkErr(err)
+		fmt.Println("id = ", id)
+		fmt.Println("name = ", name)
+		c = lobf.(*cloudwave.CloudClob)
+		fmt.Println("lobf = ", c)
+		//dest, _ := b.GetBytes()
+		//fmt.Println(dest)
+		c.GetClob_File("D:\\CloudWave\\weiping_clob" + strconv.Itoa(n) + ".txt")
+		buf, _ := c.GetString()
+		fmt.Println(string(buf))
+		n++
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+	}
+
 }
 
 func SelectBLOB() {
@@ -328,15 +366,45 @@ func SelectBLOB() {
 	checkErr(err)
 	// defer关闭数据库连接
 	defer db.Close()
-	var lobf []byte
 	id := 0
 	name := ""
+	var lobf any
+	var b *cloudwave.CloudBlob
 	// 即将得到的name值转换成s.String类型并存储到&s中
-	err = db.QueryRow("select * from test.userblob where id=115").Scan(&id, &name, &lobf)
+	//err = db.QueryRow("select * from test.userblob where id=1111").Scan(&id, &name, &lobf)
+	//checkErr(err)
+	//fmt.Println("id = ", id)
+	//fmt.Println("name = ", name)
+	//fmt.Println("lobf = ", lobf)
+	rows, err := db.Query("select * from test.userblob;")
+	cols, err := rows.Columns()
+	vals := make([]any, len(cols))
 	checkErr(err)
-	fmt.Println("id = ", id)
-	fmt.Println("name = ", name)
-	fmt.Println("lobf = ", lobf)
+	defer rows.Close()
+	// 扫描结果集
+	for i, _ := range cols {
+		vals[i] = new(sql.RawBytes)
+	}
+
+	n := 0
+	for rows.Next() {
+		// 接收每条记录的字段内容
+		err = rows.Scan(&id, &name, &lobf)
+		checkErr(err)
+		fmt.Println("id = ", id)
+		fmt.Println("name = ", name)
+		b = lobf.(*cloudwave.CloudBlob)
+		fmt.Println("lobf = ", b)
+		//dest, _ := b.GetBytes()
+		//fmt.Println(dest)
+		b.GetBlob_File("D:\\CloudWave\\weiping_blob" + strconv.Itoa(n) + ".txt")
+		buf, _ := b.GetBytes()
+		fmt.Println(buf)
+		n++
+	}
+	if rows.Err() != nil {
+		fmt.Println(err)
+	}
 }
 
 func SelectTime() {
@@ -407,8 +475,7 @@ func SelectTime() {
 
 // /         main        //////////////////////////////////////////////////////////////
 func TestA(t *testing.T) {
-
-	f, err := os.Open("D:\\CloudWave\\新程序4.0\\wisdomdata\\out.txt")
+	f, err := os.Open("D:\\CloudWave\\test.go")
 	if err != nil {
 		fmt.Println("read file fail", err)
 	}
@@ -419,12 +486,12 @@ func TestA(t *testing.T) {
 	//	fmt.Println("read to fd fail", err)
 	//}
 	//fmt.Println(string(fd))
-
 	//InsertCLOB(string(fd))
-	//InsertCLOB("123qwe456uio7890zxcv")
+
+	//InsertCLOB("lineorder_数据插入语句lineorder_数据插入语句")
 	//InsertBLOB()
 	//SelectTime()
-	//SelectCLOB()
+	SelectCLOB()
 	SelectBLOB()
 	//InsertDB1() //OK
 	//	InsertDB2()

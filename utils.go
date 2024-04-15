@@ -19,6 +19,8 @@ import (
 	"io"
 	"math"
 	"math/big"
+	"os"
+
 	//	"math/big"
 	"strconv"
 	"strings"
@@ -577,27 +579,34 @@ func Ucs2ToUtf8(ucs2 []byte, count int) ([]byte, int, error) {
 	return utf8[0:pos_utf8], pos_ucs2, nil
 }
 
-func Utf8ToUcs2(utf8 []byte, utf8len int) ([]byte, int, error) {
+func Utf8ToUcs2(utf8 []byte, utf8len int) ([]byte, int, int, error) {
 	if utf8len <= 0 {
 		utf8len = len(utf8)
 		if utf8len <= 0 {
-			return nil, 0, nil
+			return nil, 0, 0, nil
 		}
 	}
 	ucs2 := make([]byte, utf8len*2)
 	count := 0
 	pos_ucs2 := 0
-	for pos_utf8 := 0; pos_utf8 < utf8len; pos_utf8++ {
+	pos_utf8 := 0
+	for pos_utf8 = 0; pos_utf8 < utf8len; pos_utf8++ {
 		if (utf8[pos_utf8] & 0x80) == 0 {
 			ucs2[pos_ucs2] = 0
 			ucs2[pos_ucs2+1] = utf8[pos_utf8]
 			pos_ucs2 += 2
 		} else if (utf8[pos_utf8] & 0xe0) == 0xc0 {
+			if (pos_utf8 + 1) >= utf8len {
+				break
+			}
 			ucs2[pos_ucs2] = ((utf8[pos_utf8] & 0x1f) >> 2)
 			ucs2[pos_ucs2+1] = ((utf8[pos_utf8] & 0x03) << 6) | (utf8[pos_utf8+1] & 0x3f)
 			pos_utf8++
 			pos_ucs2 += 2
 		} else {
+			if (pos_utf8 + 2) >= utf8len {
+				break
+			}
 			ucs2[pos_ucs2] = ((utf8[pos_utf8] & 0x0f) << 4) | ((utf8[pos_utf8+1] & 0x3f) >> 2)
 			ucs2[pos_ucs2+1] = ((utf8[pos_utf8+1] & 0x03) << 6) | (utf8[pos_utf8+2] & 0x3f)
 			pos_utf8 += 2
@@ -608,7 +617,7 @@ func Utf8ToUcs2(utf8 []byte, utf8len int) ([]byte, int, error) {
 			//			return ucs2, pos_utf8, io.EOF
 		}
 	}
-	return ucs2[0:pos_ucs2], count, nil
+	return ucs2[0:pos_ucs2], count, pos_utf8, nil
 }
 
 func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byte) (int, error) {
@@ -619,7 +628,9 @@ func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byt
 	var v_string string
 	var v_bool bool
 	var v_time time.Time
+	var v_file os.FileInfo
 
+	v_file = nil
 	pos := 1
 	if arg == nil {
 		data[pos-1] = 1
@@ -654,6 +665,8 @@ func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byt
 		v_time = time.Time(v)
 	case json.RawMessage:
 		t = 0xff
+	case os.FileInfo:
+		v_file = os.FileInfo(v)
 	default:
 		t = 0xff
 	}
@@ -675,7 +688,7 @@ func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byt
 		default:
 			byt = []byte("?????")
 		}
-		tmp, n, _ := Utf8ToUcs2(byt, len(byt))
+		tmp, n, _, _ := Utf8ToUcs2(byt, len(byt))
 		binary.BigEndian.PutUint32(data[pos:], uint32(n))
 		pos += 4
 		n = copy(data[pos:], tmp)
@@ -838,16 +851,40 @@ func (stmt *cwStmt) writeObject(arg driver.Value, tp byte, scale int, data []byt
 
 	case CLOUD_TYPE_BLOB:
 		blob := getBlob(stmt.mc, -1, false)
-		blob.resolveBinaryIO(v_byte)
+		if v_file != nil {
+			blob.resolveBinaryIO_File(v_file)
+		} else {
+			blob.resolveBinaryIO(v_byte)
+		}
 		binary.BigEndian.PutUint64(data[pos:], uint64(blob.id))
 		pos += 8
 
 	case CLOUD_TYPE_CLOB:
 		clob := getClob(stmt.mc, -1, false)
-		byt := []byte(v_string)
-		clob.resolveCharacterIO(byt)
+		if v_file != nil {
+			clob.resolveCharacterIO_File(v_file)
+		} else {
+			byt := []byte(v_string)
+			clob.resolveCharacterIO(byt)
+		}
 		binary.BigEndian.PutUint64(data[pos:], uint64(clob.id))
 		pos += 8
+
+	case CLOUD_TYPE_JSON_OBJECT: // weip ????? 未经调试
+		var byt []byte
+		switch t {
+		case CLOUD_TYPE_CHAR:
+			byt = []byte(v_string)
+		case CLOUD_TYPE_BINARY:
+			byt = v_byte
+		default:
+			byt = []byte("?????")
+		}
+		n := len(byt)
+		binary.BigEndian.PutUint32(data[pos:], uint32(n))
+		pos += 4
+		n = copy(data[pos:], byt)
+		pos += n
 
 	case CLOUD_TYPE_BFILE:
 
@@ -1006,40 +1043,74 @@ func (rows *textRows) readObject(b []byte) (driver.Value, byte, int, int, error)
 	case CLOUD_TYPE_CLOB:
 		clobId := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
-		cloudclob := &cloudClob{
+		cloudclob := &CloudClob{
 			connection:  rows.stmt.mc,
 			statementId: rows.stmt.id,
 			cursorId:    uint32(rows.cursorId),
 			id:          clobId,
 			owned:       false,
-			maxLength:   INT_MAX_VALUE,
 		}
-		dest, err = cloudclob.getSubString()
+		dest = cloudclob
 
 	case CLOUD_TYPE_BLOB:
 		blobId := int64(binary.BigEndian.Uint64(b[pos : pos+8]))
 		pos += 8
-		cloudblob := &cloudBlob{
+		cloudblob := &CloudBlob{
 			connection:  rows.stmt.mc,
 			statementId: rows.stmt.id,
 			cursorId:    uint32(rows.cursorId),
 			id:          blobId,
 			owned:       false,
-			maxLength:   INT_MAX_VALUE,
 		}
-		dest, err = cloudblob.getBytes()
+		dest = cloudblob
 
 	case CLOUD_TYPE_ZONE_AUTO_SEQUENCE:
 		//int32(binary.BigEndian.Uint32(b[pos:pos+4]))
 		pos += 4
 		//int64(binary.BigEndian.Uint64(b[pos:pos+8]))
 		pos += 8
-		/*
-			case CLOUD_TYPE_JSON_OBJECT:
-				jsonElementSize := int32(binary.BigEndian.Uint32(b[pospos+4:]))
-				pos += 4
-			case CLOUD_TYPE_BFILE:
-		*/
+
+	case CLOUD_TYPE_JSON_OBJECT: // weip ????? 未经调试
+		count := int(binary.BigEndian.Uint32(b[pos : pos+4]))
+		pos += 4
+		vs := ""
+		for i := 0; i < count; i++ {
+			n := int(binary.BigEndian.Uint32(b[pos : pos+4]))
+			pos += 4
+			key := make([]byte, n)
+			copy(key, b[pos:pos+n])
+			pos += n
+			d, _, _, n, err := rows.readObject(b[pos:])
+			pos += n
+			if err != nil {
+				break
+			}
+			switch v := d.(type) {
+			case byte:
+			case int:
+				vs += "{ \"" + string(key) + "\" : " + strconv.Itoa(v) + " }"
+			case int32:
+				n := fmt.Sprintf("%d", v)
+				vs += "{ \"" + string(key) + "\" : " + n + " }"
+			case int64:
+				n := fmt.Sprintf("%d", v)
+				vs += "{ \"" + string(key) + "\" : " + n + " }"
+			case float32:
+				f := fmt.Sprintf("%f", v)
+				vs += "{ \"" + string(key) + "\" : " + f + " }"
+			case float64:
+				f := fmt.Sprintf("%f", v)
+				vs += "{ \"" + string(key) + "\" : " + f + " }"
+			case []byte:
+				vs += "{ \"" + string(key) + "\" : " + string(v) + " }"
+			case string:
+				vs += "{ \"" + string(key) + "\" : " + v + " }"
+			}
+		}
+		dest = vs
+
+	//case CLOUD_TYPE_BFILE:
+
 	default:
 		err = errors.New("error readObject field type not be defined")
 	}

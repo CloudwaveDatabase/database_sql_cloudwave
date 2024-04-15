@@ -3,36 +3,35 @@ package cloudwave
 import (
 	"encoding/binary"
 	"errors"
+	"os"
+	"reflect"
 )
 
-type cloudBlob struct {
+type CloudBlob struct {
 	connection  *cwConn
 	statementId uint32
 	cursorId    uint32
 	id          int64
 	owned       bool
-	maxLength   int64
-
-	writePos int64
+	writePos    int64
 }
 
 //func getType() byte {
 //	return CLOUD_TYPE_BLOB
 //}
 
-func getBlob(connection *cwConn, id int64, owned bool) *cloudBlob {
-	blob := new(cloudBlob)
+func getBlob(connection *cwConn, id int64, owned bool) *CloudBlob {
+	blob := new(CloudBlob)
 	blob.connection = connection
 
 	blob.statementId = INT_MIN_VALUE
 	blob.cursorId = INT_MIN_VALUE
 	blob.id = id
 	blob.owned = owned
-	blob.maxLength = LONG_MAX_VALUE
 	return blob
 }
 
-func (blob *cloudBlob) length() (int64, error) {
+func (blob *CloudBlob) length() (int64, error) {
 	var buf []byte
 	pktLen := 25 + 4*2 + 8
 	data := make([]byte, pktLen)
@@ -57,7 +56,7 @@ func (blob *cloudBlob) length() (int64, error) {
 	return 0, err
 }
 
-func (blob *cloudBlob) position(pattern []byte, start int64) (int64, error) {
+func (blob *CloudBlob) position(pattern []byte, start int64) (int64, error) {
 	if start <= 0 {
 		return 0, errors.New("position is less than 1")
 	}
@@ -92,17 +91,14 @@ func (blob *cloudBlob) position(pattern []byte, start int64) (int64, error) {
 	return 0, err
 }
 
-func (blob *cloudBlob) getBinaryStream(position int64, length int64) error {
-	if position < 1 {
+func (blob *CloudBlob) getBinaryStream(position int64, length int64) error {
+	if position < 0 {
 		return errors.New("position is less than 1")
 	} else if length < 0 {
 		return errors.New("length is less than 0")
 	}
-	position = position - 1
-
 	pktLen := 25 + 4*2 + 8*3
 	data := make([]byte, pktLen)
-
 	pos := 25
 	binary.BigEndian.PutUint32(data[pos:], uint32(blob.statementId))
 	pos += 4
@@ -127,20 +123,12 @@ func (blob *cloudBlob) getBinaryStream(position int64, length int64) error {
 	return err
 }
 
-func (blob *cloudBlob) getBytes() ([]byte, error) {
-	length, err := blob.length()
-	if err != nil {
-		return nil, err
-	}
-
-	err = blob.getBinaryStream(1, length)
-	if err != nil {
-		return nil, err
-	}
+func (blob *CloudBlob) readChunk(position int64, length int) ([]byte, error) {
+	var err error
 	var buf []byte
+
 	pktLen := 25 + 4*2 + 8*2 + 4 + 1
 	data := make([]byte, pktLen)
-
 	pos := 25
 	binary.BigEndian.PutUint32(data[pos:], uint32(blob.statementId))
 	pos += 4
@@ -148,29 +136,81 @@ func (blob *cloudBlob) getBytes() ([]byte, error) {
 	pos += 4
 	binary.BigEndian.PutUint64(data[pos:], uint64(blob.id))
 	pos += 8
-	binary.BigEndian.PutUint64(data[pos:], uint64(0))
+	binary.BigEndian.PutUint64(data[pos:], uint64(position))
 	pos += 8
-	blobLength := int(length)
-	binary.BigEndian.PutUint32(data[pos:], uint32(blobLength))
+	binary.BigEndian.PutUint32(data[pos:], uint32(length))
 	pos += 4
 	data[pos] = 1
 	pos += 1
 	blob.connection.setCommandPacket(LOB_READ_BUFFER, pos, data[0:25])
-	// Send CMD packet
+
 	err = blob.connection.writePacket(data[0:pos])
 	if err == nil {
 		buf, err = blob.connection.readResultOK()
 		if err == nil {
 			return buf[1:], err
 		}
-		err = errors.New("blob get string error")
+		err = errors.New("blob get []byte error")
 	}
 	return nil, err
 }
 
+func (blob *CloudBlob) GetBytes() ([]byte, error) {
+	length, err := blob.length()
+	if err != nil {
+		return nil, err
+	}
+	err = blob.getBinaryStream(0, length)
+	if err != nil {
+		return nil, err
+	}
+	var buf []byte
+
+	buf, err = blob.readChunk(0, int(length))
+	if err == nil {
+		return buf, nil
+	}
+	return nil, err
+}
+
+func (blob *CloudBlob) GetBlob_File(filename string) error {
+	var readedLength int64
+	var buf []byte
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	maxLength, err := blob.length()
+	if err != nil {
+		return err
+	}
+
+	err = blob.getBinaryStream(0, maxLength)
+	if err != nil {
+		return err
+	}
+	readedLength = 0
+	for readedLength < maxLength {
+		readLength := INT_CHUNK_SIZE
+		if (readedLength + INT_CHUNK_SIZE) > maxLength {
+			readLength = int(maxLength - readedLength)
+		}
+		buf, err = blob.readChunk(readedLength, readLength)
+		if err != nil {
+			return err
+		}
+		file.Write(buf)
+		readedLength += INT_CHUNK_SIZE
+	}
+	return nil
+}
+
 // 写入//
 
-func (blob *cloudBlob) setBinaryStream(position int64) error {
+func (blob *CloudBlob) setBinaryStream(position int64) error {
 	if position < 1 {
 		return errors.New("position is less than 1")
 	}
@@ -199,7 +239,7 @@ func (blob *cloudBlob) setBinaryStream(position int64) error {
 	return err
 }
 
-func (blob *cloudBlob) truncate(length int64) error {
+func (blob *CloudBlob) truncate(length int64) error {
 	pktLen := 25 + 4*2 + 8*3
 	data := make([]byte, pktLen)
 
@@ -224,7 +264,7 @@ func (blob *cloudBlob) truncate(length int64) error {
 	return err
 }
 
-func (blob *cloudBlob) free() error {
+func (blob *CloudBlob) free() error {
 	pktLen := 25 + 4*2 + 8
 	data := make([]byte, pktLen)
 
@@ -249,7 +289,7 @@ func (blob *cloudBlob) free() error {
 
 // //
 
-func (blob *cloudBlob) write(cbuf []byte, length int) error {
+func (blob *CloudBlob) write(cbuf []byte, length int) error {
 	var buf []byte
 	pktLen := 25 + 4*2 + 8*2 + 4 + length + 1
 	data := make([]byte, pktLen)
@@ -285,14 +325,19 @@ func (blob *cloudBlob) write(cbuf []byte, length int) error {
 	return err
 }
 
-func (blob *cloudBlob) resolveBinaryIO(reader []byte) error {
+func (blob *CloudBlob) resolveBinaryIO(reader []byte) error {
 	var err error
 	readerlen := len(reader)
-	blob.setBinaryStream(1)
+	err = blob.setBinaryStream(1)
+	if err != nil {
+		return err
+	}
+	blob.writePos = 0
+
 	writeoff := 0
 	for writeoff < readerlen {
-		writelen := 4096
-		if (readerlen - writeoff) < 4096 {
+		writelen := INT_CHUNK_SIZE
+		if (readerlen - writeoff) < INT_CHUNK_SIZE {
 			writelen = readerlen - writeoff
 		}
 		err = blob.write(reader[writeoff:], writelen)
@@ -300,6 +345,38 @@ func (blob *cloudBlob) resolveBinaryIO(reader []byte) error {
 			return err
 		}
 		writeoff += writelen
+	}
+	err = blob.free()
+	if err == nil {
+		blob.owned = true
+	}
+	return err
+}
+
+func (blob *CloudBlob) resolveBinaryIO_File(fileInfo os.FileInfo) error {
+	readerlen := fileInfo.Size()
+	pathname := reflect.ValueOf(fileInfo).Elem().FieldByName("path").String()
+	file, err := os.Open(pathname)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = blob.setBinaryStream(1)
+	if err != nil {
+		return err
+	}
+
+	buffer := make([]byte, INT_CHUNK_SIZE)
+	blob.writePos = 0
+
+	writeoff := int64(0)
+	for writeoff < readerlen {
+		writelen, err := file.Read(buffer)
+		err = blob.write(buffer, writelen)
+		if err != nil {
+			return err
+		}
+		writeoff += int64(writelen)
 	}
 	err = blob.free()
 	if err == nil {

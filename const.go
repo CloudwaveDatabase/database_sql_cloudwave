@@ -21,6 +21,8 @@ const (
 
 	LONG_MIN_VALUE = 0x8000000000000000
 	LONG_MAX_VALUE = 0x7fffffffffffffff
+
+	INT_CHUNK_SIZE = 8192
 )
 
 // MySQL constants documentation:
