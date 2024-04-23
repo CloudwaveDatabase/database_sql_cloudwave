@@ -50,7 +50,7 @@ func TestBlob(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = db.Exec(fmt.Sprintf("create table %s(id integer,c1 blob)", t.Name()))
+	_, err = db.Exec(fmt.Sprintf("create table %s(id integer,c1 blob, primary key(id))", t.Name()))
 	if err != nil {
 		t.Error(err)
 	}
