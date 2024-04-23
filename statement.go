@@ -25,6 +25,7 @@ type cwStmt struct {
 	cursorId        int32
 	paramCount      int
 	paramType       []byte
+	autokeyFields   []bool
 }
 
 func (stmt *cwStmt) Close() error {

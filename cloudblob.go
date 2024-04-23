@@ -56,6 +56,7 @@ func (blob *CloudBlob) length() (int64, error) {
 	return 0, err
 }
 
+/*
 func (blob *CloudBlob) position(pattern []byte, start int64) (int64, error) {
 	if start <= 0 {
 		return 0, errors.New("position is less than 1")
@@ -90,6 +91,7 @@ func (blob *CloudBlob) position(pattern []byte, start int64) (int64, error) {
 	}
 	return 0, err
 }
+*/
 
 func (blob *CloudBlob) getBinaryStream(position int64, length int64) error {
 	if position < 0 {

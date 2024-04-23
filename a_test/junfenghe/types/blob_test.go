@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
 	"testing"
 )
@@ -49,7 +50,7 @@ func TestBlob(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	_, err = db.Exec(fmt.Sprintf("create table %s(id integer,c1 blob, primary key(id))", t.Name()))
+	_, err = db.Exec(fmt.Sprintf("create table %s(id integer,c1 blob)", t.Name()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -62,12 +63,19 @@ func TestBlob(t *testing.T) {
 		t.Error(err)
 	}
 	log.Println(exec)
+
 	rows, err := db.Query("select * from " + t.Name())
 	for rows.Next() {
 		var id int
-		var c1 []byte
+		//var c1 []byte
+		var c1 *cloudwave.CloudBlob
 		rows.Scan(&id, &c1)
-		log.Println(id, string(c1))
+
+		bytes, err := c1.GetBytes()
+		if err != nil {
+			t.Error(err)
+		}
+		log.Println(id, string(bytes))
 	}
 
 }

@@ -429,6 +429,8 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 			// read meta data of server cursor's all columns
 			// first read column count
 			columnSize := int(binary.BigEndian.Uint32(data[pos:]))
+			stmt.autokeyFields = make([]bool, columnSize+4)
+			autokeyFieldsNo := 0
 			pos += 4
 			// extend enough columns
 			//CI_set_num_fields(res->fields, columnSize, TRUE);
@@ -468,9 +470,13 @@ func (stmt *cwStmt) readResultSetHeaderPacket2() (int, *textRows, error) {
 					}
 					pos++
 					isautokay, _ := regexp.MatchString("__WISDOM_AUTO_KEY__$", columns[j].name)
-					if !isautokay {
+					if isautokay {
+						stmt.autokeyFields[autokeyFieldsNo] = true
+					} else {
+						stmt.autokeyFields[autokeyFieldsNo] = false
 						j++
 					}
+					autokeyFieldsNo++
 				}
 				if pos <= len(data) {
 					if j == columnSize {
@@ -771,7 +777,7 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 	}
 	pos += 4
 	i := 0
-	start := 1
+	autokeyFieldsNo := 0
 	for {
 		var scale int
 		if i >= len(dest) {
@@ -781,14 +787,14 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 		if err != nil {
 			break
 		}
-		if start != 1 {
-			i++
-		}
-		start = 0
-		if tp != CLOUD_TYPE_ZONE_AUTO_SEQUENCE {
+
+		if tp != CLOUD_TYPE_ZONE_AUTO_SEQUENCE { // ??????
 			//i++
 		}
-
+		if !rows.stmt.autokeyFields[autokeyFieldsNo] {
+			i++
+		}
+		autokeyFieldsNo++
 		pos += n
 		scale = scale
 		/*
