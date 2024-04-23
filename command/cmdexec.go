@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	"github.com/cloudwavedatabase/database_sql_cloudwave"
 	"sort"
 	"strings"
 	//	"database/sql/driver"
