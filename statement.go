@@ -57,9 +57,11 @@ func (stmt *cwStmt) Close() error {
 	if err == nil {
 		buf, err := stmt.mc.readResultOK()
 		if err == nil {
-			id := binary.BigEndian.Uint32(buf[1:])
-			if id != stmt.id {
-				return errCloseStatement
+			if len(buf) >= 5 {
+				id := binary.BigEndian.Uint32(buf[1:])
+				if id != stmt.id {
+					return errCloseStatement
+				}
 			}
 		}
 	}
