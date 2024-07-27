@@ -2,6 +2,7 @@ package command
 
 import (
 	"database/sql"
+	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"testing"
 	//	"errors"
 	"fmt"
@@ -16,17 +17,50 @@ func checkErr(err error) {
 	}
 }
 
+func comm() {
+	var err error
+	var token string
+
+	cmds := []string{"use cretail", "2023年的销售额是多少", "2023年的销售额同比增长率是多少", "2022年的销售额是多少", "你能帮我找出销售额上升的主要原因吗"}
+	ex := cloudwave.Expand{}
+
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/test")
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < len(cmds); i++ {
+		fmt.Println(cmds[i])
+		token, err = ex.StreamingChat(cmds[i])
+		for true {
+			if token == cloudwave.END_OF_STREAMING_CHAT {
+				break
+			}
+			fmt.Print(token)
+			token, err = ex.ReadStreamingChatToken()
+		}
+		fmt.Println()
+	}
+
+	ex.StreamingChatEnd()
+}
+
 // /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
+	var err error
+	comm()
+	return
+
 	dbw := DbWorker{
 		Dsn: "system:CHANGEME@(127.0.0.1:1978)/toutiao", //本机翰云
 	}
-	var err error
+
 	dbw.Db, err = sql.Open("cloudwave", dbw.Dsn)
 	if err != nil {
 		panic(err)
 		return
 	}
+
 	// See "Important settings" section.
 	dbw.Db.SetConnMaxLifetime(time.Minute * 3)
 	dbw.Db.SetMaxOpenConns(10)
