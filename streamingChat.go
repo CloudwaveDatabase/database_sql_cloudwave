@@ -100,8 +100,8 @@ func (e *Expand) StreamingChat(inputText string) (string, error) {
 	return str, err
 }
 
-func (e *Expand) ReadStreamingChatToken() (string, error) {
-	resExec, err := e.Db.Exec("CloudWave", READ_STREAMING_CHAT_TOKEN)
+func (e *Expand) NextStreamingChat() (string, error) {
+	resExec, err := e.Db.Exec("CloudWave", EXECUTE_STREAMING_CHAT)
 	if err != nil {
 		return "", err
 	}

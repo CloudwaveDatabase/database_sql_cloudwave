@@ -446,7 +446,7 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 		}
 		if cmd > -10000 {
 			if len(args) == 1 {
-				if cmd != READ_STREAMING_CHAT_TOKEN {
+				if cmd != EXECUTE_STREAMING_CHAT {
 					err = mc.writeCommandPacket(cmd)
 				}
 			} else {
@@ -522,7 +522,7 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 				}
 			}
 			if err == nil {
-				if cmd == EXECUTE_STREAMING_CHAT || cmd == READ_STREAMING_CHAT_TOKEN {
+				if cmd == EXECUTE_STREAMING_CHAT {
 					buf, err = mc.readStreamingCharToken()
 				} else {
 					buf, err = mc.readResultOK()
