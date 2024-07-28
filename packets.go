@@ -396,22 +396,23 @@ func (mc *cwConn) readResultOK() ([]byte, error) {
 	return nil, errors.New("error Result size is 0")
 }
 
-func (mc *cwConn) readStreamingChar() ([]byte, error) {
-	var buf []byte
-	for {
-		data, err := mc.readPacket2()
-		if err != nil {
-			return buf, err
+/*
+	func (mc *cwConn) readStreamingChar() ([]byte, error) {
+		var buf []byte
+		for {
+			data, err := mc.readPacket2()
+			if err != nil {
+				return buf, err
+			}
+			if string(data) == END_OF_STREAMING_CHAT {
+				buf = append(buf, "\n"...)
+				return buf, nil
+			}
+			buf = append(buf, data...)
 		}
-		if string(data) == END_OF_STREAMING_CHAT {
-			buf = append(buf, "\n"...)
-			return buf, nil
-		}
-		buf = append(buf, data...)
+		return buf, nil
 	}
-	return buf, nil
-}
-
+*/
 func (mc *cwConn) readStreamingCharToken() ([]byte, error) {
 	data, err := mc.readPacket2()
 	return data, err

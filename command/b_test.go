@@ -37,7 +37,8 @@ func comm() {
 				break
 			}
 			fmt.Print(token)
-			token, err = ex.ReadStreamingChatToken()
+			//token, err = ex.ReadStreamingChatToken()
+			token, err = ex.NextStreamingChat()
 		}
 		fmt.Println()
 	}

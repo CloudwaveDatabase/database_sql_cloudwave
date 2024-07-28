@@ -718,5 +718,4 @@ const (
 	EXECUTE_STREAMING_CHAT = 167
 )
 
-const READ_STREAMING_CHAT_TOKEN = 1025
 const END_OF_STREAMING_CHAT = "__end_of_streaming_chat__"
