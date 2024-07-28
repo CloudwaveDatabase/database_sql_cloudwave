@@ -436,6 +436,7 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 	if mc.execType == CLOUDWAVE_SELFUSEDRIVE {
 		var buf []byte
 		var err error
+		err = nil
 		cmd := -10000
 		if len(args) > 0 {
 			switch v := args[0].(type) {
@@ -445,7 +446,9 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 		}
 		if cmd > -10000 {
 			if len(args) == 1 {
-				err = mc.writeCommandPacket(cmd)
+				if cmd != EXECUTE_STREAMING_CHAT {
+					err = mc.writeCommandPacket(cmd)
+				}
 			} else {
 				var data []byte
 				data, err = mc.buf.takeCompleteBuffer()
@@ -465,6 +468,9 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 					case float64:
 						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(int32(v)))
 						pos += 4
+					case uint64:
+						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(v))
+						pos += 4
 					case int64:
 						binary.BigEndian.PutUint64(data[pos:pos+8], uint64(v))
 						pos += 8
@@ -480,9 +486,16 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
 						pos += (4 + n)
 					case string:
-						n := copy(data[pos+4:], v)
-						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
-						pos += (4 + n)
+						if cmd == EXECUTE_STREAMING_CHAT {
+							n := copy(data[pos+2:], v)
+							binary.BigEndian.PutUint16(data[pos:pos+2], uint16(n))
+							pos += (2 + n)
+
+						} else {
+							n := copy(data[pos+4:], v)
+							binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
+							pos += (4 + n)
+						}
 					case json.RawMessage:
 						js := v
 						var ss []string
@@ -509,7 +522,11 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 				}
 			}
 			if err == nil {
-				buf, err = mc.readResultOK()
+				if cmd == EXECUTE_STREAMING_CHAT {
+					buf, err = mc.readStreamingCharToken()
+				} else {
+					buf, err = mc.readResultOK()
+				}
 			}
 			if err == nil {
 				i := int64(pushData(buf))

@@ -714,4 +714,8 @@ const (
 	DATABASE_META_DATA_GET_SHARES                      = 156
 	GET_ZONE_SERVERS                                   = 157
 	CREATE_TABLET                                      = 158
+
+	EXECUTE_STREAMING_CHAT = 167
 )
+
+const END_OF_STREAMING_CHAT = "__end_of_streaming_chat__"
