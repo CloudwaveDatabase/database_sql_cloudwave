@@ -21,10 +21,15 @@ func comm() {
 	var err error
 	var token string
 
-	cmds := []string{"use cretail", "2023年的销售额是多少", "2023年的销售额同比增长率是多少", "2022年的销售额是多少", "你能帮我找出销售额上升的主要原因吗"}
+	//cmds := []string{"use cretail", "2023年的销售额是多少", "2023年的销售额同比增长率是多少", "2022年的销售额是多少", "你能帮我找出销售额上升的主要原因吗"}
+	//ex := cloudwave.Expand{}
+	//
+	//err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
+	cmds := []string{"use itest", "中国上海的经济是怎样？"}
 	ex := cloudwave.Expand{}
 
-	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/test")
+	ex.ChatType = "graphqrag"
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/itest")
 	if err != nil {
 		panic(err)
 	}
