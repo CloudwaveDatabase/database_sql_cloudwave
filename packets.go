@@ -126,6 +126,48 @@ func (mc *cwConn) readPacket() ([]byte, error) {
 	}
 }
 
+// Read packet to buffer 'data'
+func (mc *cwConn) readPacket2() ([]byte, error) {
+	var prevData []byte
+	for {
+		// read packet header
+		data, err := mc.buf.readNext(2)
+		if err != nil {
+			if cerr := mc.canceled.Value(); cerr != nil {
+				return nil, cerr
+			}
+			errLog.Print(err)
+			mc.Close()
+			return nil, ErrInvalidConn
+		}
+
+		pktLen := int(binary.BigEndian.Uint16(data[0:]))
+
+		// read packet body [pktLen bytes]
+		data, err = mc.buf.readNext(pktLen)
+		if err != nil {
+			if cerr := mc.canceled.Value(); cerr != nil {
+				return nil, cerr
+			}
+			errLog.Print(err)
+			mc.Close()
+			return nil, ErrInvalidConn
+		}
+
+		// return data if this was the last packet
+		if pktLen < maxPacketSize {
+			// zero allocations for non-split packets
+			if prevData == nil {
+				return data, nil
+			}
+
+			return append(prevData, data...), nil
+		}
+
+		prevData = append(prevData, data...)
+	}
+}
+
 // Write packet buffer 'data'
 func (mc *cwConn) writePacket(data []byte) error {
 	pktLen := len(data)
@@ -352,6 +394,28 @@ func (mc *cwConn) readResultOK() ([]byte, error) {
 		return nil, mc.handleErrorPacket(data)
 	}
 	return nil, errors.New("error Result size is 0")
+}
+
+/*
+	func (mc *cwConn) readStreamingChar() ([]byte, error) {
+		var buf []byte
+		for {
+			data, err := mc.readPacket2()
+			if err != nil {
+				return buf, err
+			}
+			if string(data) == END_OF_STREAMING_CHAT {
+				buf = append(buf, "\n"...)
+				return buf, nil
+			}
+			buf = append(buf, data...)
+		}
+		return buf, nil
+	}
+*/
+func (mc *cwConn) readStreamingCharToken() ([]byte, error) {
+	data, err := mc.readPacket2()
+	return data, err
 }
 
 func splitName(name string) (string, string) {

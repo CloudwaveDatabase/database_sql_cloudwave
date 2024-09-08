@@ -2,10 +2,10 @@ package types
 
 import (
 	"fmt"
+	"github.com/cloudwavedatabase/database_sql_cloudwave"
+	"github.com/cloudwavedatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"log"
 	"os"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/a_test/junfenghe/common"
 	"testing"
 )
 

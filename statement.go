@@ -55,15 +55,7 @@ func (stmt *cwStmt) Close() error {
 	//	if stmt.stmtType != CONNECTION_PREPARED_STATEMENT {
 	err = stmt.mc.writePacket(data[0:pos])
 	if err == nil {
-		buf, err := stmt.mc.readResultOK()
-		if err == nil {
-			if len(buf) >= 5 {
-				id := binary.BigEndian.Uint32(buf[1:])
-				if id != stmt.id {
-					return errCloseStatement
-				}
-			}
-		}
+		_, err = stmt.mc.readResultOK()
 	}
 	//	}
 	stmt.mc = nil

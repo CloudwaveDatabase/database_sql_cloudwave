@@ -2,12 +2,12 @@ package a
 
 import (
 	"database/sql"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave/command"
+	"github.com/cloudwavedatabase/database_sql_cloudwave/command"
 	"testing"
 	//	"errors"
 	"fmt"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
 	"log"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 	"time"
 )
 
@@ -17,7 +17,7 @@ func checkErr(err error) {
 	}
 }
 
-///         main        //////////////////////////////////////////////////////////////
+// /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
 	dbw := command.DbWorker{
 		Dsn: "tpch1:tpch1@(127.0.0.1:1978)/tpch1", //本机翰云

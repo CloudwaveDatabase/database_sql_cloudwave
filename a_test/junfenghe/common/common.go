@@ -3,7 +3,7 @@ package common
 import (
 	"database/sql"
 	"errors"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	_ "github.com/cloudwavedatabase/database_sql_cloudwave"
 	"time"
 )
 
