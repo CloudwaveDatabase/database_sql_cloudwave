@@ -3,12 +3,14 @@ package command
 import (
 	"database/sql"
 	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	"strings"
 	"testing"
+	"time"
+
 	//	"errors"
 	"fmt"
 	"log"
 	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
-	"time"
 )
 
 func checkErr(err error) {
@@ -17,19 +19,44 @@ func checkErr(err error) {
 	}
 }
 
-func comm() {
+func dimension1() {
 	var err error
 	var token string
 
-	cmds := []string{"use cretail", "2023年的销售额是多少", "2023年的销售额同比增长率是多少", "2022年的销售额是多少", "你能帮我找出销售额上升的主要原因吗"}
-	ex := cloudwave.Expand{}
+	cmds := []string{"use cretail",
+		/* 1 */ "2023年的销售额是多少",
+		/* 2 */ "2023年的销售额同比增长率是多少",
+		/* 3 */ "2023年销售额下降了，你能帮我做归因分析吗？",
+		"你能帮我找出销售额下降的主要原因吗？", // 错
+		"分析一下2023增长的维度",
+		/* 4 */ "2022年的销售额是多少",
+		/* 5 */ "2021年的销售额相对2020年的销售额同比增长率是多少",
+		/* 6 */ "你能帮我找出销售额上升的主要原因吗",
+		/* 7 */ "去年的销售额是多少",
+		/* 8 */ "去年各个产品的销售额分别是多少",
+		/* 9 */ "2022年各个产品的销售额分别是多少",
+		/* 10 */ "2021年销售额前三的产品和销售额",
+		/* 11 */ "2023年每个季度和产品的销售额",
+		/* 12 */ "2021年各个产品每个月的销售额",
+		/* 13 */ "2021年各个产品每个月的销售额按产品排序",
 
-	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/test")
+		"2023年每个月份的销售额的同比增长率",
+		"2023年每月的销售额的同比增长率",
+		"2023年每个月份的销售额的环比增长率",
+
+		"2023年4月的销售额环比增长率是多少",
+
+		"显示系统所有的指标"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
 	if err != nil {
 		panic(err)
 	}
+	ex.StreamingChatType("dimension")
 
 	for i := 0; i < len(cmds); i++ {
+		//time.Sleep(time.Second * 10)
 		fmt.Println(cmds[i])
 		token, err = ex.StreamingChat(cmds[i])
 		for true {
@@ -37,8 +64,135 @@ func comm() {
 				break
 			}
 			fmt.Print(token)
-			//token, err = ex.ReadStreamingChatToken()
 			token, err = ex.NextStreamingChat()
+		}
+		fmt.Println()
+	}
+
+	ex.StreamingChatEnd()
+}
+
+func dimension() {
+	var err error
+	var token string
+
+	cmds := []string{"use customs",
+		"2024年总出口额",
+		"2024年每个月的出口额"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
+	if err != nil {
+		panic(err)
+	}
+	ex.StreamingChatType("dimension")
+
+	for i := 0; i < len(cmds); i++ {
+		//time.Sleep(time.Second * 10)
+		fmt.Println(cmds[i])
+		token, err = ex.StreamingChat(cmds[i])
+		for true {
+			if token == cloudwave.END_OF_STREAMING_CHAT {
+				break
+			}
+			fmt.Print(token)
+			token, err = ex.NextStreamingChat()
+		}
+		if strings.Index(cmds[i], "use") != 0 {
+			token, err = ex.ChatResult()
+			fmt.Print(token)
+		}
+		fmt.Println()
+	}
+
+	ex.StreamingChatEnd()
+}
+
+func graphrag() {
+	var err error
+	var token string
+
+	cmds := []string{"use ECONOMY",
+		/* 1 */ "中国上海的经济怎样？"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
+	if err != nil {
+		panic(err)
+	}
+	ex.StreamingChatType("graphrag")
+
+	for i := 0; i < len(cmds); i++ {
+		//time.Sleep(time.Second * 10)
+		fmt.Println(cmds[i])
+		token, err = ex.StreamingChat(cmds[i])
+		for true {
+			if token == cloudwave.END_OF_STREAMING_CHAT {
+				break
+			}
+			fmt.Print(token)
+			token, err = ex.NextStreamingChat()
+		}
+		fmt.Println()
+	}
+
+	ex.StreamingChatEnd()
+}
+
+func rag() {
+	var err error
+	var token string
+
+	cmds := []string{"use ECONOMY",
+		/* 1 */ "中国上海的经济怎样？"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
+	if err != nil {
+		panic(err)
+	}
+	ex.StreamingChatType("rag")
+
+	for i := 0; i < len(cmds); i++ {
+		//time.Sleep(time.Second * 10)
+		fmt.Println(cmds[i])
+		token, err = ex.StreamingChat(cmds[i])
+		for true {
+			if token == cloudwave.END_OF_STREAMING_CHAT {
+				break
+			}
+			fmt.Print(token)
+			token, err = ex.NextStreamingChat()
+		}
+		fmt.Println()
+	}
+
+	ex.StreamingChatEnd()
+}
+
+func chatResult() {
+	var err error
+	var token string
+
+	cmds := []string{"use customs",
+		"2024年总出口额",
+		"2024年每个月的出口额"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
+	if err != nil {
+		panic(err)
+	}
+	ex.StreamingChatType("dimension")
+
+	for i := 0; i < len(cmds); i++ {
+		//time.Sleep(time.Second * 10)
+		fmt.Println(cmds[i])
+		token, err = ex.Chat(cmds[i])
+		fmt.Println(token)
+		if strings.Index(cmds[i], "use") != 0 {
+			token, err = ex.ChatResult()
+			fmt.Print(token)
 		}
 		fmt.Println()
 	}
@@ -49,11 +203,14 @@ func comm() {
 // /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
 	var err error
-	comm()
+	//dimension()
+	//graphrag()
+	//rag()
+	chatResult()
 	return
 
 	dbw := DbWorker{
-		Dsn: "system:CHANGEME@(127.0.0.1:1978)/toutiao", //本机翰云
+		Dsn: "system:CHANGEME@(127.0.0.1:1978)/cretail", //本机翰云
 	}
 
 	dbw.Db, err = sql.Open("cloudwave", dbw.Dsn)
@@ -63,7 +220,7 @@ func TestB(t *testing.T) {
 	}
 
 	// See "Important settings" section.
-	dbw.Db.SetConnMaxLifetime(time.Minute * 3)
+	dbw.Db.SetConnMaxLifetime(time.Minute * 1)
 	dbw.Db.SetMaxOpenConns(10)
 	dbw.Db.SetMaxIdleConns(10)
 

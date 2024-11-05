@@ -492,7 +492,7 @@ func TestA(t *testing.T) {
 	//InsertBLOB()
 	//SelectTime()
 	SelectCLOB()
-	SelectBLOB()
+	//SelectBLOB()
 	//InsertDB1() //OK
 	//	InsertDB2()
 	//InsertDB3()

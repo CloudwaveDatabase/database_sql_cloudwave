@@ -530,6 +530,7 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 			}
 			if err == nil {
 				i := int64(pushData(buf))
+				//fmt.Println("pushData ", i, " ", buf)
 				return &cwResult{
 					affectedRows: i,
 					insertId:     0,

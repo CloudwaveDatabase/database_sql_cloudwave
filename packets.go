@@ -131,7 +131,8 @@ func (mc *cwConn) readPacket2() ([]byte, error) {
 	var prevData []byte
 	for {
 		// read packet header
-		data, err := mc.buf.readNext(2)
+		//data, err := mc.buf.readNext(2)
+		data, err := mc.buf.readNext(4)
 		if err != nil {
 			if cerr := mc.canceled.Value(); cerr != nil {
 				return nil, cerr
@@ -141,7 +142,8 @@ func (mc *cwConn) readPacket2() ([]byte, error) {
 			return nil, ErrInvalidConn
 		}
 
-		pktLen := int(binary.BigEndian.Uint16(data[0:]))
+		//pktLen := int(binary.BigEndian.Uint16(data[0:]))
+		pktLen := int(binary.BigEndian.Uint32(data[0:]))
 
 		// read packet body [pktLen bytes]
 		data, err = mc.buf.readNext(pktLen)
@@ -416,6 +418,22 @@ func (mc *cwConn) readResultOK() ([]byte, error) {
 func (mc *cwConn) readStreamingCharToken() ([]byte, error) {
 	data, err := mc.readPacket2()
 	return data, err
+	/*
+		data, err := mc.readPacket2()
+		if err != nil {
+			return nil, err
+		}
+		length := len(data)
+		if length > 0 {
+			if data[0] == iOK {
+				buf := make([]byte, length-1)
+				copy(buf, data[1:length])
+				return buf, nil
+			}
+			return nil, mc.handleErrorPacket(data)
+		}
+		return nil, errors.New("error Result size is 0")
+	*/
 }
 
 func splitName(name string) (string, string) {

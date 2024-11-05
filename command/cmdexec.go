@@ -100,7 +100,7 @@ func (db *DbWorker) GetInfoNoparamCommon(cmd commandType) (interface{}, error) {
 		}
 		i, _ := resExec.RowsAffected()
 		buf := cloudwave.PullData(int(i))
-		if buf == nil && len(buf) < 5 {
+		if buf == nil || len(buf) < 5 {
 			return nil, errors.New("no result")
 		}
 		switch cmd {
@@ -369,7 +369,7 @@ func (db *DbWorker) GetResultTaskStatistics(requestID int64) ([][]string, error)
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if buf == nil && len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return nil, errors.New("no result")
 	}
 	count := int(binary.BigEndian.Uint32(buf[1:]))
@@ -534,7 +534,7 @@ func (db *DbWorker) GetSQLStatistics(timeRange int64) (string, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return "", errors.New("result is null")
 	}
 	str, _, err := readString(buf[1:])
@@ -549,7 +549,7 @@ func (db *DbWorker) getSQLHistorys(tp int, count int) ([]string, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if buf == nil && len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return nil, errors.New("no result")
 	}
 	count2 := int(binary.BigEndian.Uint32(buf[1:]))
@@ -612,7 +612,7 @@ func (db *DbWorker) GetUserPrivileges(user string) (string, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return "", errors.New("result is null")
 	}
 	str, _, err := readString(buf[1:])
@@ -627,7 +627,7 @@ func (db *DbWorker) GetServerLogger(server []byte, tail bool, count int) (string
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return "", errors.New("result is null")
 	}
 	str, _, err := readString(buf[1:])
@@ -642,7 +642,7 @@ func (db *DbWorker) GetProcessJstack(trim bool, server []byte) (string, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return "", errors.New("result is null")
 	}
 	str, _, err := readString(buf[1:])
@@ -657,7 +657,7 @@ func (db *DbWorker) GetHealthDiagnostic(simpleCheck bool) ([]string, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := cloudwave.PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return nil, errors.New("result is null")
 	}
 	ss := make([]string, MaxResultReturnRecord)

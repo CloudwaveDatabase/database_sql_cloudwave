@@ -6,14 +6,16 @@ import (
 	"database/sql/driver"
 	"encoding/binary"
 	"errors"
-	"time"
+	"strings"
 )
 
 type Expand struct {
 	//Dsn string
 	Db *sql.DB
 
-	StmtId int32
+	StmtId          int32
+	executeSequence int32
+	ChatType        string
 }
 
 func (e Expand) Open(dsn string) (driver.Conn, error) {
@@ -43,7 +45,7 @@ func (e Expand) CreateStatement() (int32, error) {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := PullData(int(i))
-	if len(buf) < 5 {
+	if buf == nil || len(buf) < 5 {
 		return 0, errors.New("result is null")
 	}
 	num := int32(binary.BigEndian.Uint32(buf[1:]))
@@ -57,7 +59,7 @@ func (e Expand) CloseStatement(int32) error {
 	}
 	i, _ := resExec.RowsAffected()
 	buf := PullData(int(i))
-	if len(buf) <= 0 || buf[0] != iOK {
+	if buf == nil || len(buf) <= 0 || buf[0] != iOK {
 		return errors.New("error：close stmt")
 	}
 	return nil
@@ -70,11 +72,14 @@ func (e *Expand) StreamingChatBegin(dns string) error {
 		return err
 	}
 	// See "Important settings" section.
-	e.Db.SetConnMaxLifetime(time.Minute * 3)
+	//e.Db.SetConnMaxLifetime(time.Minute * 60)
+	e.Db.SetConnMaxLifetime(0)
 	e.Db.SetMaxOpenConns(10)
 	e.Db.SetMaxIdleConns(10)
 
 	e.StmtId, err = e.CreateStatement()
+	e.executeSequence = 0
+	e.ChatType = "dimension"
 	return err
 }
 
@@ -86,12 +91,24 @@ func (e *Expand) StreamingChatEnd() {
 	return
 }
 
+func (e *Expand) StreamingChatType(chattype string) {
+	if strings.EqualFold(chattype, "dimension") ||
+		strings.EqualFold(chattype, "graphrag") ||
+		strings.EqualFold(chattype, "rag") {
+		e.ChatType = chattype
+	} else {
+		e.ChatType = "dimension"
+	}
+	return
+}
+
 func (e *Expand) StreamingChat(inputText string) (string, error) {
-	resExec, err := e.Db.Exec("CloudWave", EXECUTE_STREAMING_CHAT, uint64(e.StmtId), inputText)
+	resExec, err := e.Db.Exec("CloudWave", EXECUTE_STREAMING_CHAT, uint64(e.StmtId), inputText, e.ChatType)
 	if err != nil {
 		return "", err
 	}
 	i, _ := resExec.RowsAffected()
+
 	buf := PullData(int(i))
 	if buf == nil {
 		return "", nil
@@ -111,5 +128,37 @@ func (e *Expand) NextStreamingChat() (string, error) {
 		return "", nil
 	}
 	str := string(buf)
+	return str, err
+}
+
+func (e *Expand) Chat(inputText string) (string, error) {
+	resExec, err := e.Db.Exec("CloudWave", EXECUTE_CHAT, uint64(e.StmtId),
+		uint64(e.executeSequence), inputText, e.ChatType)
+	e.executeSequence++
+	if err != nil {
+		return "", err
+	}
+	i, _ := resExec.RowsAffected()
+
+	buf := PullData(int(i))
+	if buf == nil || len(buf) < 5 || buf[0] != 1 {
+		return "", nil
+	}
+	str, _, err := readString(buf[1:])
+	return str, err
+}
+
+func (e *Expand) ChatResult() (string, error) {
+	resExec, err := e.Db.Exec("CloudWave", GET_CHAT_RESULT, uint64(e.StmtId))
+	if err != nil {
+		return "", err
+	}
+	i, _ := resExec.RowsAffected()
+
+	buf := PullData(int(i))
+	if buf == nil || len(buf) < 5 || buf[0] != 1 {
+		return "", nil
+	}
+	str, _, err := readString(buf[1:])
 	return str, err
 }
