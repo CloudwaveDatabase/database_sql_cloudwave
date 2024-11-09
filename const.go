@@ -718,6 +718,7 @@ const (
 	EXECUTE_CHAT           = 166
 	EXECUTE_STREAMING_CHAT = 167
 	GET_CHAT_RESULT        = 173
+	QUERY_KNOWLEDGE        = 174
 )
 
 const END_OF_STREAMING_CHAT = "__end_of_streaming_chat__"

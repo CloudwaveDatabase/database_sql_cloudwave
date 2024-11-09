@@ -162,3 +162,20 @@ func (e *Expand) ChatResult() (string, error) {
 	str, _, err := readString(buf[1:])
 	return str, err
 }
+
+func (e *Expand) QueryKnowledge(inputText string) (string, error) {
+	resExec, err := e.Db.Exec("CloudWave", QUERY_KNOWLEDGE, uint64(e.StmtId),
+		uint64(e.executeSequence), inputText)
+	e.executeSequence++
+	if err != nil {
+		return "", err
+	}
+	i, _ := resExec.RowsAffected()
+
+	buf := PullData(int(i))
+	if buf == nil || len(buf) < 5 || buf[0] != 1 {
+		return "", nil
+	}
+	str, _, err := readString(buf[1:])
+	return str, err
+}

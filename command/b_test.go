@@ -200,13 +200,33 @@ func chatResult() {
 	ex.StreamingChatEnd()
 }
 
+func queryKnowledge() {
+	var err error
+	var token string
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cmedicine")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("use cmedicine")
+	ex.Db.Exec("use cmedicine")
+	fmt.Println("失眠，能睡过去，容易醒")
+	token, err = ex.QueryKnowledge("失眠，能睡过去，容易醒")
+	fmt.Println(token)
+
+	ex.StreamingChatEnd()
+}
+
 // /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
 	var err error
 	//dimension()
 	//graphrag()
 	//rag()
-	chatResult()
+	//chatResult()
+	queryKnowledge()
 	return
 
 	dbw := DbWorker{
