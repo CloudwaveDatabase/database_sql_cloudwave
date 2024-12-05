@@ -2,8 +2,7 @@ package types
 
 import (
 	"fmt"
-	"github.com/go-sql-driver/cloudwave"
-	"github.com/go-sql-driver/cloudwave/a_test/junfenghe/common"
+	"github.com/CloudwaveDatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"log"
 	"os"
 	"testing"

@@ -13,9 +13,9 @@ import (
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
-//	"crypto/x509"
-//	"encoding/pem"
-//	"fmt"
+	//	"crypto/x509"
+	//	"encoding/pem"
+	//	"fmt"
 	"sync"
 )
 
@@ -33,27 +33,26 @@ var (
 // Note: The provided rsa.PublicKey instance is exclusively owned by the driver
 // after registering it and may not be modified.
 //
-//  data, err := ioutil.ReadFile("mykey.pem")
-//  if err != nil {
-//  	log.Fatal(err)
-//  }
+//	data, err := ioutil.ReadFile("mykey.pem")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //
-//  block, _ := pem.Decode(data)
-//  if block == nil || block.Type != "PUBLIC KEY" {
-//  	log.Fatal("failed to decode PEM block containing public key")
-//  }
+//	block, _ := pem.Decode(data)
+//	if block == nil || block.Type != "PUBLIC KEY" {
+//		log.Fatal("failed to decode PEM block containing public key")
+//	}
 //
-//  pub, err := x509.ParsePKIXPublicKey(block.Bytes)
-//  if err != nil {
-//  	log.Fatal(err)
-//  }
+//	pub, err := x509.ParsePKIXPublicKey(block.Bytes)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
 //
-//  if rsaPubKey, ok := pub.(*rsa.PublicKey); ok {
-//  	cloudwave.RegisterServerPubKey("mykey", rsaPubKey)
-//  } else {
-//  	log.Fatal("not a RSA public key")
-//  }
-//
+//	if rsaPubKey, ok := pub.(*rsa.PublicKey); ok {
+//		cloudwave.RegisterServerPubKey("mykey", rsaPubKey)
+//	} else {
+//		log.Fatal("not a RSA public key")
+//	}
 func RegisterServerPubKey(name string, pubKey *rsa.PublicKey) {
 	serverPubKeyLock.Lock()
 	if serverPubKeyRegistry == nil {
@@ -241,7 +240,7 @@ func (mc *cwConn) auth(authData []byte, plugin string) ([]byte, error) {
 		}
 		// Note: there are edge cases where this should work but doesn't;
 		// this is currently "wontfix":
-		// https://github.com/go-sql-driver/cloudwave/issues/184
+		// https://github.com/CloudwaveDatabase/database_sql_cloudwave/issues/184
 		authResp := append(scrambleOldPassword(authData[:8], mc.cfg.Passwd), 0)
 		return authResp, nil
 

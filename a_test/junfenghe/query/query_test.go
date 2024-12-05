@@ -1,8 +1,8 @@
 package query
 
 import (
-	_ "github.com/go-sql-driver/cloudwave"
-	"github.com/go-sql-driver/cloudwave/a_test/junfenghe/common"
+	_ "github.com/CloudwaveDatabase/database_sql_cloudwave"
+	"github.com/CloudwaveDatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 )
 

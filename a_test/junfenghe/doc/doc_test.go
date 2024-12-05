@@ -1,7 +1,7 @@
 package doc
 
 import (
-	"github.com/go-sql-driver/cloudwave/a_test/junfenghe/common"
+	"github.com/CloudwaveDatabase/database_sql_cloudwave/a_test/junfenghe/common"
 	"testing"
 	"time"
 )

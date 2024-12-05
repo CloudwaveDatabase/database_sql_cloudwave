@@ -72,7 +72,7 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/go-sql-driver/cloudwave"
+	_ "github.com/CloudwaveDatabase/database_sql_cloudwave"
 )
 
 // ...

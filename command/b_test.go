@@ -2,13 +2,12 @@ package command
 
 import (
 	"database/sql"
-	"github.com/go-sql-driver/cloudwave"
 	"testing"
 	"time"
 
 	//	"errors"
 	"fmt"
-	_ "github.com/go-sql-driver/cloudwave"
+	_ "github.com/CloudwaveDatabase/database_sql_cloudwave"
 	"log"
 )
 
