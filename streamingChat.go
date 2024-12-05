@@ -91,6 +91,12 @@ func (e *Expand) StreamingChatEnd() {
 	return
 }
 
+func (e *Expand) UseSchema(schemaname string) error {
+	sql := "use schema " + schemaname
+	_, err := e.Db.Exec(sql)
+	return err
+}
+
 func (e *Expand) StreamingChatType(chattype string) {
 	if strings.EqualFold(chattype, "dimension") ||
 		strings.EqualFold(chattype, "graphrag") ||
@@ -102,8 +108,8 @@ func (e *Expand) StreamingChatType(chattype string) {
 	return
 }
 
-func (e *Expand) StreamingChat(inputText string) (string, error) {
-	resExec, err := e.Db.Exec("CloudWave", EXECUTE_STREAMING_CHAT, uint64(e.StmtId), inputText, e.ChatType)
+func (e *Expand) StreamingChat(hisstring []string, inputText string) (string, error) {
+	resExec, err := e.Db.Exec("CloudWave", EXECUTE_STREAMING_CHAT, uint64(e.StmtId), hisstring, inputText, e.ChatType)
 	if err != nil {
 		return "", err
 	}
@@ -131,9 +137,9 @@ func (e *Expand) NextStreamingChat() (string, error) {
 	return str, err
 }
 
-func (e *Expand) Chat(inputText string) (string, error) {
+func (e *Expand) Chat(hisstring []string, inputText string) (string, error) {
 	resExec, err := e.Db.Exec("CloudWave", EXECUTE_CHAT, uint64(e.StmtId),
-		uint64(e.executeSequence), inputText, e.ChatType)
+		uint64(e.executeSequence), hisstring, inputText, e.ChatType)
 	e.executeSequence++
 	if err != nil {
 		return "", err
@@ -163,9 +169,9 @@ func (e *Expand) ChatResult() (string, error) {
 	return str, err
 }
 
-func (e *Expand) QueryKnowledge(inputText string) (string, error) {
+func (e *Expand) QueryKnowledge(hisstring []string, inputText string) (string, error) {
 	resExec, err := e.Db.Exec("CloudWave", QUERY_KNOWLEDGE, uint64(e.StmtId),
-		uint64(e.executeSequence), inputText)
+		uint64(e.executeSequence), hisstring, inputText)
 	e.executeSequence++
 	if err != nil {
 		return "", err

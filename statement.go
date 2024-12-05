@@ -240,12 +240,15 @@ func (c converter) ConvertValue(v interface{}) (driver.Value, error) {
 		return rv.Float(), nil
 	case reflect.Bool:
 		return rv.Bool(), nil
+		//	case reflect.s:
 	case reflect.Slice:
 		switch t := rv.Type(); {
 		case t == jsonType:
 			return v, nil
 		case t.Elem().Kind() == reflect.Uint8:
 			return rv.Bytes(), nil
+		case t.Elem().Kind() == reflect.String:
+			return v, nil
 		default:
 			return nil, fmt.Errorf("unsupported type %T, a slice of %s", v, t.Elem().Kind())
 		}

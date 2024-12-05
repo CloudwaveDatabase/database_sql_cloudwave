@@ -3,7 +3,6 @@ package command
 import (
 	"database/sql"
 	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
-	"strings"
 	"testing"
 	"time"
 
@@ -23,7 +22,7 @@ func dimension1() {
 	var err error
 	var token string
 
-	cmds := []string{"use cretail",
+	cmds := []string{
 		/* 1 */ "2023年的销售额是多少",
 		/* 2 */ "2023年的销售额同比增长率是多少",
 		/* 3 */ "2023年销售额下降了，你能帮我做归因分析吗？",
@@ -48,36 +47,7 @@ func dimension1() {
 
 		"显示系统所有的指标"}
 
-	ex := cloudwave.Expand{}
-	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
-	if err != nil {
-		panic(err)
-	}
-	ex.StreamingChatType("dimension")
-
-	for i := 0; i < len(cmds); i++ {
-		//time.Sleep(time.Second * 10)
-		fmt.Println(cmds[i])
-		token, err = ex.StreamingChat(cmds[i])
-		for true {
-			if token == cloudwave.END_OF_STREAMING_CHAT {
-				break
-			}
-			fmt.Print(token)
-			token, err = ex.NextStreamingChat()
-		}
-		fmt.Println()
-	}
-
-	ex.StreamingChatEnd()
-}
-
-func dimension() {
-	var err error
-	var token string
-
-	cmds := []string{"use customs",
-		"2024年总出口额",
+	his := []string{"2024年总出口额",
 		"2024年每个月的出口额"}
 
 	ex := cloudwave.Expand{}
@@ -87,24 +57,58 @@ func dimension() {
 	}
 	ex.StreamingChatType("dimension")
 
-	for i := 0; i < len(cmds); i++ {
-		//time.Sleep(time.Second * 10)
-		fmt.Println(cmds[i])
-		token, err = ex.StreamingChat(cmds[i])
-		for true {
-			if token == cloudwave.END_OF_STREAMING_CHAT {
-				break
+	err = ex.UseSchema("cretail")
+	if err == nil {
+		for i := 0; i < len(cmds); i++ {
+			//time.Sleep(time.Second * 10)
+			fmt.Println(cmds[i])
+			token, err = ex.StreamingChat(his, cmds[i])
+			for true {
+				if token == cloudwave.END_OF_STREAMING_CHAT {
+					break
+				}
+				fmt.Print(token)
+				token, err = ex.NextStreamingChat()
 			}
-			fmt.Print(token)
-			token, err = ex.NextStreamingChat()
+			fmt.Println()
 		}
-		if strings.Index(cmds[i], "use") != 0 {
-			token, err = ex.ChatResult()
-			fmt.Print(token)
-		}
-		fmt.Println()
 	}
+	ex.StreamingChatEnd()
+}
 
+func dimension() {
+	var err error
+	var token string
+
+	cmds := []string{
+		"口苦"}
+	his := []string{"口苦",
+		"您还有别的症状吗？"}
+
+	ex := cloudwave.Expand{}
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
+	if err != nil {
+		panic(err)
+	}
+	ex.StreamingChatType("graphrag")
+
+	err = ex.UseSchema("cmedicine")
+	if err == nil {
+		for i := 0; i < len(cmds); i++ {
+			//time.Sleep(time.Second * 10)
+			fmt.Println(cmds[i])
+			token, err = ex.StreamingChat(his, cmds[i])
+			for true {
+				if token == cloudwave.END_OF_STREAMING_CHAT {
+					break
+				}
+				fmt.Print(token)
+				token, err = ex.NextStreamingChat()
+			}
+			token, err = ex.ChatResult()
+			fmt.Println(token)
+		}
+	}
 	ex.StreamingChatEnd()
 }
 
@@ -112,8 +116,10 @@ func graphrag() {
 	var err error
 	var token string
 
-	cmds := []string{"use ECONOMY",
+	cmds := []string{
 		/* 1 */ "中国上海的经济怎样？"}
+	his := []string{"2024年总出口额",
+		"2024年每个月的出口额"}
 
 	ex := cloudwave.Expand{}
 	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
@@ -122,20 +128,22 @@ func graphrag() {
 	}
 	ex.StreamingChatType("graphrag")
 
-	for i := 0; i < len(cmds); i++ {
-		//time.Sleep(time.Second * 10)
-		fmt.Println(cmds[i])
-		token, err = ex.StreamingChat(cmds[i])
-		for true {
-			if token == cloudwave.END_OF_STREAMING_CHAT {
-				break
+	err = ex.UseSchema("ECONOMY")
+	if err == nil {
+		for i := 0; i < len(cmds); i++ {
+			//time.Sleep(time.Second * 10)
+			fmt.Println(cmds[i])
+			token, err = ex.StreamingChat(his, cmds[i])
+			for true {
+				if token == cloudwave.END_OF_STREAMING_CHAT {
+					break
+				}
+				fmt.Print(token)
+				token, err = ex.NextStreamingChat()
 			}
-			fmt.Print(token)
-			token, err = ex.NextStreamingChat()
+			fmt.Println()
 		}
-		fmt.Println()
 	}
-
 	ex.StreamingChatEnd()
 }
 
@@ -143,8 +151,10 @@ func rag() {
 	var err error
 	var token string
 
-	cmds := []string{"use ECONOMY",
+	cmds := []string{
 		/* 1 */ "中国上海的经济怎样？"}
+	his := []string{"2024年总出口额",
+		"2024年每个月的出口额"}
 
 	ex := cloudwave.Expand{}
 	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
@@ -153,20 +163,22 @@ func rag() {
 	}
 	ex.StreamingChatType("rag")
 
-	for i := 0; i < len(cmds); i++ {
-		//time.Sleep(time.Second * 10)
-		fmt.Println(cmds[i])
-		token, err = ex.StreamingChat(cmds[i])
-		for true {
-			if token == cloudwave.END_OF_STREAMING_CHAT {
-				break
+	err = ex.UseSchema("ECONOMY")
+	if err == nil {
+		for i := 0; i < len(cmds); i++ {
+			//time.Sleep(time.Second * 10)
+			fmt.Println(cmds[i])
+			token, err = ex.StreamingChat(his, cmds[i])
+			for true {
+				if token == cloudwave.END_OF_STREAMING_CHAT {
+					break
+				}
+				fmt.Print(token)
+				token, err = ex.NextStreamingChat()
 			}
-			fmt.Print(token)
-			token, err = ex.NextStreamingChat()
+			fmt.Println()
 		}
-		fmt.Println()
 	}
-
 	ex.StreamingChatEnd()
 }
 
@@ -174,9 +186,11 @@ func chatResult() {
 	var err error
 	var token string
 
-	cmds := []string{"use customs",
+	cmds := []string{
 		"2024年总出口额",
 		"2024年每个月的出口额"}
+	//his := []string{"2024年总出口额",
+	//	"2024年每个月的出口额"}
 
 	ex := cloudwave.Expand{}
 	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
@@ -185,18 +199,17 @@ func chatResult() {
 	}
 	ex.StreamingChatType("dimension")
 
-	for i := 0; i < len(cmds); i++ {
-		//time.Sleep(time.Second * 10)
-		fmt.Println(cmds[i])
-		token, err = ex.Chat(cmds[i])
-		fmt.Println(token)
-		if strings.Index(cmds[i], "use") != 0 {
+	err = ex.UseSchema("customs")
+	if err == nil {
+		for i := 0; i < len(cmds); i++ {
+			//time.Sleep(time.Second * 10)
+			fmt.Println(cmds[i])
+			token, err = ex.Chat(nil, cmds[i])
+			fmt.Println(token)
 			token, err = ex.ChatResult()
-			fmt.Print(token)
+			fmt.Println(token)
 		}
-		fmt.Println()
 	}
-
 	ex.StreamingChatEnd()
 }
 
@@ -204,18 +217,21 @@ func queryKnowledge() {
 	var err error
 	var token string
 
+	his := []string{"2024年总出口额",
+		"2024年每个月的出口额"}
+
 	ex := cloudwave.Expand{}
-	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cmedicine")
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/ECONOMY")
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println("use cmedicine")
-	ex.Db.Exec("use cmedicine")
-	fmt.Println("失眠，能睡过去，容易醒")
-	token, err = ex.QueryKnowledge("失眠，能睡过去，容易醒")
-	fmt.Println(token)
-
+	err = ex.UseSchema("cmedicine")
+	if err == nil {
+		fmt.Println("失眠，能睡过去，容易醒")
+		token, err = ex.QueryKnowledge(his, "失眠，能睡过去，容易醒")
+		fmt.Println(token)
+	}
 	ex.StreamingChatEnd()
 }
 
@@ -225,8 +241,8 @@ func TestB(t *testing.T) {
 	//dimension()
 	//graphrag()
 	//rag()
-	//chatResult()
-	queryKnowledge()
+	chatResult()
+	//queryKnowledge()
 	return
 
 	dbw := DbWorker{

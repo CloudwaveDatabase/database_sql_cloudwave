@@ -496,6 +496,16 @@ func (mc *cwConn) Exec(query string, args []driver.Value) (driver.Result, error)
 							binary.BigEndian.PutUint32(data[pos:pos+4], uint32(n))
 							pos += (4 + n)
 						}
+					case []string:
+						var ss []string
+						ss = v
+						binary.BigEndian.PutUint32(data[pos:pos+4], uint32(len(ss)))
+						pos += 4
+						for i := 0; i < len(ss); i++ {
+							n := copy(data[pos+2:], ss[i])
+							binary.BigEndian.PutUint16(data[pos:pos+2], uint16(n))
+							pos += (2 + n)
+						}
 					case json.RawMessage:
 						js := v
 						var ss []string
