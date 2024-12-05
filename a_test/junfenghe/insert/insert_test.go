@@ -2,7 +2,7 @@ package insert
 
 import (
 	"database/sql"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	_ "github.com/go-sql-driver/cloudwave"
 	"testing"
 	"time"
 )

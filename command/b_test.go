@@ -2,14 +2,14 @@ package command
 
 import (
 	"database/sql"
-	"proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
+	"github.com/go-sql-driver/cloudwave"
 	"testing"
 	"time"
 
 	//	"errors"
 	"fmt"
+	_ "github.com/go-sql-driver/cloudwave"
 	"log"
-	_ "proxy.cloudwave.cn/share/go-sql-driver/cloudwave"
 )
 
 func checkErr(err error) {
