@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"encoding/binary"
 	"errors"
-	"strings"
 )
 
 type Expand struct {
@@ -98,13 +97,9 @@ func (e *Expand) UseSchema(schemaname string) error {
 }
 
 func (e *Expand) StreamingChatType(chattype string) {
-	if strings.EqualFold(chattype, "dimension") ||
-		strings.EqualFold(chattype, "graphrag") ||
-		strings.EqualFold(chattype, "rag") {
-		e.ChatType = chattype
-	} else {
-		e.ChatType = "dimension"
-	}
+
+	e.ChatType = chattype
+
 	return
 }
 

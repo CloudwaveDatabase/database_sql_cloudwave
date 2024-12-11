@@ -81,18 +81,18 @@ func dimension() {
 	var token string
 
 	cmds := []string{
-		"口苦"}
-	his := []string{"口苦",
-		"您还有别的症状吗？"}
+		"2020年以来，我国每年的出口分别是多少",
+	}
+	his := []string{}
 
 	ex := cloudwave.Expand{}
-	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/cretail")
+	err = ex.StreamingChatBegin("system:CHANGEME@(127.0.0.1:1978)/customs")
 	if err != nil {
 		panic(err)
 	}
-	ex.StreamingChatType("graphrag")
+	ex.StreamingChatType("agent")
 
-	err = ex.UseSchema("cmedicine")
+	err = ex.UseSchema("customs")
 	if err == nil {
 		for i := 0; i < len(cmds); i++ {
 			//time.Sleep(time.Second * 10)
@@ -238,10 +238,10 @@ func queryKnowledge() {
 // /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
 	var err error
-	//dimension()
+	dimension()
 	//graphrag()
 	//rag()
-	chatResult()
+	//chatResult()
 	//queryKnowledge()
 	return
 
