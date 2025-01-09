@@ -17,10 +17,10 @@ func checkErr(err error) {
 	}
 }
 
-///         main        //////////////////////////////////////////////////////////////
+// /         main        //////////////////////////////////////////////////////////////
 func TestB(t *testing.T) {
 	dbw := command.DbWorker{
-		Dsn: "tpch1:tpch1@(127.0.0.1:1978)/tpch1", //本机翰云
+		Dsn: "system:CHANGEME@(127.0.0.1:1978)/customs", //本机翰云
 	}
 	var err error
 	dbw.Db, err = sql.Open("cloudwave", dbw.Dsn)
@@ -34,25 +34,25 @@ func TestB(t *testing.T) {
 	dbw.Db.SetMaxIdleConns(10)
 
 	//	dest, err := dbw.GetInfoNoparamCommon(GetNetworkStatus)
-	dest, err := dbw.GetInfoNoparamCommon(command.GetRuntimeReport)
-	if err == nil && dest != nil {
-		switch v := dest.(type) {
-		case []byte:
-			buf := v
-			fmt.Println(buf)
-		case string:
-			s := v
-			fmt.Println(s)
-		case []string:
-			ss := v
-			fmt.Println(ss)
-		case [][]string:
-			sss := v
-			fmt.Println(sss)
-		default:
-		}
-	}
-	fmt.Println(dest)
+	//dest, err := dbw.GetInfoNoparamCommon(command.GetRuntimeReport)
+	//if err == nil && dest != nil {
+	//	switch v := dest.(type) {
+	//	case []byte:
+	//		buf := v
+	//		fmt.Println(buf)
+	//	case string:
+	//		s := v
+	//		fmt.Println(s)
+	//	case []string:
+	//		ss := v
+	//		fmt.Println(ss)
+	//	case [][]string:
+	//		sss := v
+	//		fmt.Println(sss)
+	//	default:
+	//	}
+	//}
+	//fmt.Println(dest)
 
 	//	str, err := dbw.GetServerLogger("server", true, -10001000)
 	//	fmt.Println(str)
@@ -66,12 +66,12 @@ func TestB(t *testing.T) {
 	//	b, err := dbw.DoRestartServer("ss")
 	//	fmt.Println(b)
 
-	//	ss, err := dbw.GetSchemaNameList("catalog")
-	//	fmt.Println(ss)
+	//ss, err := dbw.GetSchemaNameList("catalog")
+	//fmt.Println(ss)
 
-	//	GetTableComment, GetTableNameList, GetViewNameList
-	//	ss, err := dbw.GetNameList(GetTableComment, "catalog", []byte("toutiao"), []byte("table"))
-	//	fmt.Println(ss)
+	//GetTableComment, GetTableNameList, GetViewNameList
+	//ss, err := dbw.GetNameList(GetTableComment, "catalog", []byte("toutiao"), []byte("table"))
+	//fmt.Println(ss)
 
 	//	s, err := dbw.GetUserPrivileges("hu")
 	//	fmt.Println(s)
@@ -91,11 +91,14 @@ func TestB(t *testing.T) {
 	//	ss, err := dbw.GetResultTaskStatistics(0)
 	//	fmt.Println(ss)
 
-	//	ss, err := dbw.GetTableColumns("toutiao", "testtable", 0)
-	//	fmt.Println(ss)
-
-	ss, err := dbw.GetHistorySQLs()
+	ss, err := dbw.GetTableColumns([]byte("customs"), []byte("detail"), 0)
 	fmt.Println(ss)
+
+	//ss, err := dbw.GetHistorySQLs()
+	//fmt.Println(ss)
+	//ss, err := dbw.GetHistorySQLs()
+
+	//fmt.Println(ss)
 
 	dbw.Db.Close()
 	fmt.Println("end")
